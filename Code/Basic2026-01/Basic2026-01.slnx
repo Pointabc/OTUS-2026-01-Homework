@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="BotEmulation/BotEmulation.csproj" />
+  <Project Path="HomeFinancesTelegramBot/HomeFinancesTelegramBot.csproj" Id="1fdf9464-52fb-49f1-b3a5-8fbe83778b2f" />
+</Solution>
