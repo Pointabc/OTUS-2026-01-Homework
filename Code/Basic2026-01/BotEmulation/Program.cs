@@ -1,11 +1,11 @@
 ﻿using BotEmulation;
 using static System.Console;
 
-WriteLine("Здравстуйте, я Telegram бот - помогу управлять личными финансами.");
+var userName = string.Empty;
+
+WriteLine("Привет, это твой Telegram бот - запускай команды и получай результат.");
 WriteLine("Основные команды: ");
 CommandHelp();
-
-var userName = string.Empty;
 
 while (true)
 {
@@ -57,7 +57,7 @@ void CommandStart()
 {
     if (!string.IsNullOrEmpty(userName))
     {
-        WriteLine($"Привет, {userName}, я твой бот. Напиши мне что-нибудь и я отвечу.");
+        WriteLine($"Привет, {userName}, я твой бот. Введи команду и получи результат.");
     }
     else
     {
@@ -67,12 +67,18 @@ void CommandStart()
         {
             userName = ReadLine()?.Trim();
         }
+        WriteLine($"Рад тебя видеть, {userName}.");
     }
 }
 
 void CommandHelp()
 {
-    WriteLine($"{BotConstants.CommandStart} - Начать управлять финансами.");
+    if (!string.IsNullOrEmpty(userName))
+    {
+        WriteLine($"{userName}, ниже список команд.");
+    }
+
+    WriteLine($"{BotConstants.CommandStart} - Начать работать с ботом.");
     WriteLine($"{BotConstants.CommandHelp} - Вывести команды.");
     WriteLine($"{BotConstants.CommandInfo} - Вывести информацию о Telegram боте.");
     WriteLine($"{BotConstants.CommandEcho} - Вывести, то что ввел пользователь.");
@@ -81,6 +87,11 @@ void CommandHelp()
 
 void CommandInfo()
 {
+    if (!string.IsNullOrEmpty(userName))
+    {
+        WriteLine($"{userName}, ниже информация о программе.");
+    }
+
     WriteLine($"Версия бота 0.0.1. Дата создания {BotConstants.CreatedDate}");
 }
 
