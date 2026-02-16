@@ -8,7 +8,7 @@ using static System.Console;
 // Get token from environment variable
 string? token = Environment.GetEnvironmentVariable("TelegramBotTokenOTUSBasic", EnvironmentVariableTarget.User);
 
-if (string.IsNullOrEmpty(token))
+if (string.IsNullOrWhiteSpace(token))
 {
     WriteLine("Bot token not found. Please set the TELEGRAM_BOT_TOKEN environment variable.");
     return;

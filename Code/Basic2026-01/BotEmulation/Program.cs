@@ -41,7 +41,7 @@ while (true)
             WriteLine("Работа с ботом завершена.");
             return;
         case BotConstants.CommandEcho:
-            if (!string.IsNullOrEmpty(userName))
+            if (!string.IsNullOrWhiteSpace(userName))
             {
                 CommandEcho(commandArgument);
             }
@@ -55,7 +55,7 @@ while (true)
 
 void CommandStart()
 {
-    if (!string.IsNullOrEmpty(userName))
+    if (!string.IsNullOrWhiteSpace(userName))
     {
         WriteLine($"Привет, {userName}, я твой бот. Введи команду и получи результат.");
     }
@@ -63,7 +63,7 @@ void CommandStart()
     {
         Write("Представьтесь: ");
 
-        while (string.IsNullOrEmpty(userName))
+        while (string.IsNullOrWhiteSpace(userName))
         {
             userName = ReadLine()?.Trim();
         }
@@ -73,7 +73,7 @@ void CommandStart()
 
 void CommandHelp()
 {
-    if (!string.IsNullOrEmpty(userName))
+    if (!string.IsNullOrWhiteSpace(userName))
     {
         WriteLine($"{userName}, ниже список команд.");
     }
@@ -87,7 +87,7 @@ void CommandHelp()
 
 void CommandInfo()
 {
-    if (!string.IsNullOrEmpty(userName))
+    if (!string.IsNullOrWhiteSpace(userName))
     {
         WriteLine($"{userName}, ниже информация о программе.");
     }
