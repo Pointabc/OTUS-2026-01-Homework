@@ -42,9 +42,9 @@ while (true)
             return;
         case BotConstants.CommandEcho:
             if (!string.IsNullOrWhiteSpace(userName))
-            {
                 CommandEcho(commandArgument);
-            }
+            else
+                WriteLine("Для использования команды /echo нужно зарегистрироваться, с помощью команды /start.");
             break;
         default:
             WriteLine("Неизвестная команда.");
