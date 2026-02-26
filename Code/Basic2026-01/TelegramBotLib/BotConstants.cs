@@ -1,5 +1,5 @@
 ﻿
-namespace BotEmulation
+namespace TelegramBotLib
 {
     internal class BotConstants
     {
