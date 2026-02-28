@@ -4,12 +4,7 @@ namespace TelegramBotLib
 {
     public class Core
     {
-        string _userName;
-
-        public Core()
-        {
-            _userName = string.Empty;
-        }
+        string _userName = string.Empty;
 
         public void Start()
         {
