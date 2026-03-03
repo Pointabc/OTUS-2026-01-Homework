@@ -20,5 +20,11 @@ namespace TelegramBotLib
         /// Дата создания бота.
         /// </summary>
         public static readonly DateTime CreatedDate = new DateTime(2026, 2, 9);
+
+        #region Строковые константы.
+
+        public const string MessageNoTaskFoundByNumber = "Задача с номером '{0}' не найдена. Используйте команду {1} и введите существующий номер задачи.";
+
+        #endregion
     }
 }

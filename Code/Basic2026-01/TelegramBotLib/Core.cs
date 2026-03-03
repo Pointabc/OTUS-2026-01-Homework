@@ -188,16 +188,19 @@ namespace TelegramBotLib
 
             if (!long.TryParse(userInput, out var taskNumber))
             {
-                WriteLine($"Задача с номером '{userInput}' не найдена. Используйте команду {BotConstants.CommandRemoveTask} и введите существующий номер задачи.");
+                WriteLine(string.Format(BotConstants.MessageNoTaskFoundByNumber, userInput, BotConstants.CommandRemoveTask));
                 return;
             }
 
             var taskToRemove = _tasks.Where(t => t.Number == taskNumber).FirstOrDefault();
-            
-            if (taskToRemove != null)
-                _tasks.Remove(taskToRemove);
 
-            WriteLine($"Задача с номером {taskNumber} удалена");
+            if (taskToRemove != null)
+            {
+                _tasks.Remove(taskToRemove);
+                WriteLine($"Задача с номером {taskNumber} удалена");
+            }
+            else
+                WriteLine(string.Format(BotConstants.MessageNoTaskFoundByNumber, userInput, BotConstants.CommandRemoveTask));
         }
 
         #endregion
