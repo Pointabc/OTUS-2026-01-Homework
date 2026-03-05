@@ -160,28 +160,27 @@ namespace TelegramBotLib
         /// <summary>
         /// Отобразить задачи.
         /// </summary>
-        void CommandShowTasks()
+        /// <returns>False - список задач пустой, иначе True.</returns>
+        bool CommandShowTasks()
         {
             if (!_tasks.Any())
             {
                 WriteLine(GetCasePhrase("Список задач пуст."));
-                return;
+                return false;
             }
 
             WriteLine(GetCasePhrase("Cписок задач:"));
             foreach (var task in _tasks)
                 WriteLine($"{task.Number:d6} {task.Description}");
+
+            return true;
         }
 
         void CommandRemoveTask()
         {
-            if (!_tasks.Any())
-            {
-                WriteLine(GetCasePhrase("Список задач пустой."));
+            if (!CommandShowTasks())
                 return;
-            }
 
-            CommandShowTasks();
             Write("Введите номер задачи для удаления: ");
 
             var userInput = ReadLine()?.Trim();
