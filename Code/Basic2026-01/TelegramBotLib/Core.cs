@@ -17,7 +17,6 @@ namespace TelegramBotLib
                 WriteLine("Введите максимально допустимое количество задач:");
 
                 var inputMaxTaskNumber = ReadLine();
-                ValidateString(inputMaxTaskNumber);
                 var maxTaskNumber = ParseAndValidateLong(inputMaxTaskNumber, BotConstants.MinTaskNumber, BotConstants.MaxTaskNumber);
 
                 if (maxTaskNumber < BotConstants.MinTaskNumber || maxTaskNumber > BotConstants.MaxTaskNumber)
@@ -31,7 +30,6 @@ namespace TelegramBotLib
 
                 WriteLine("Введите максимально допустимую длину задачи:");
                 var inputMaxTaskDiscriptionLength = ReadLine();
-                ValidateString(inputMaxTaskDiscriptionLength);
                 var maxTaskDiscriptionLength = ParseAndValidateLong(inputMaxTaskDiscriptionLength, BotConstants.MinTaskDiscriptioLength, BotConstants.MaxTaskDiscriptionLength);
 
                 if (maxTaskDiscriptionLength < BotConstants.MinTaskDiscriptioLength || maxTaskDiscriptionLength > BotConstants.MaxTaskDiscriptionLength)
