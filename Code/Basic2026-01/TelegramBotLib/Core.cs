@@ -55,56 +55,63 @@ namespace TelegramBotLib
 
                 while (true)
                 {
-                    GetUserCommandAndArgument();
-
-                    switch (_userCommand)
+                    try
                     {
-                        case BotConstants.CommandStart:
-                            CommandStart();
-                            break;
-                        case BotConstants.CommandHelp:
-                            CommandHelp();
-                            break;
-                        case BotConstants.CommandInfo:
-                            CommandInfo();
-                            break;
-                        case BotConstants.CommandExit:
-                            WriteLine("Работа с ботом завершена.");
-                            return;
-                        case BotConstants.CommandEcho:
-                            if (!string.IsNullOrWhiteSpace(_userName))
-                                CommandEcho(_commandArgument);
-                            else
-                                WriteLine("Для использования команды /echo нужно зарегистрироваться, с помощью команды /start.");
-                            break;
-                        case BotConstants.CommandAddTask:
-                            try
-                            {
-                                CommandAddTask();
-                            }
-                            catch (TaskCountLimitException taskCountLimitException)
-                            {
-                                WriteLine(taskCountLimitException.Message);
-                            }
-                            catch (TaskLengthLimitException taskLengthLimitException)
-                            {
-                                WriteLine(taskLengthLimitException.Message);
-                            }
-                            catch (DuplicateTaskException duplicateTaskException)
-                            {
-                                WriteLine(duplicateTaskException.Message);
-                            }
-                            break;
-                        case BotConstants.CommandShowTasks:
-                            CommandShowTasks();
-                            break;
-                        case BotConstants.CommandRemoveTask:
-                            CommandRemoveTask();
-                            break;
-                        default:
-                            WriteLine("Неизвестная команда.");
-                            CommandHelp();
-                            break;
+                        GetUserCommandAndArgument();
+
+                        switch (_userCommand)
+                        {
+                            case BotConstants.CommandStart:
+                                CommandStart();
+                                break;
+                            case BotConstants.CommandHelp:
+                                CommandHelp();
+                                break;
+                            case BotConstants.CommandInfo:
+                                CommandInfo();
+                                break;
+                            case BotConstants.CommandExit:
+                                WriteLine("Работа с ботом завершена.");
+                                return;
+                            case BotConstants.CommandEcho:
+                                if (!string.IsNullOrWhiteSpace(_userName))
+                                    CommandEcho(_commandArgument);
+                                else
+                                    WriteLine("Для использования команды /echo нужно зарегистрироваться, с помощью команды /start.");
+                                break;
+                            case BotConstants.CommandAddTask:
+                                try
+                                {
+                                    CommandAddTask();
+                                }
+                                catch (TaskCountLimitException taskCountLimitException)
+                                {
+                                    WriteLine(taskCountLimitException.Message);
+                                }
+                                catch (TaskLengthLimitException taskLengthLimitException)
+                                {
+                                    WriteLine(taskLengthLimitException.Message);
+                                }
+                                catch (DuplicateTaskException duplicateTaskException)
+                                {
+                                    WriteLine(duplicateTaskException.Message);
+                                }
+                                break;
+                            case BotConstants.CommandShowTasks:
+                                CommandShowTasks();
+                                break;
+                            case BotConstants.CommandRemoveTask:
+                                CommandRemoveTask();
+                                break;
+                            default:
+                                WriteLine("Неизвестная команда.");
+                                CommandHelp();
+                                break;
+                        }
+                    }
+                    catch
+                    {
+                        WriteLine("Неизвестная ошибка приобработке команд.");
                     }
                 }
             }
