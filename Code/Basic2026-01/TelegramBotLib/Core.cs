@@ -80,22 +80,7 @@ namespace TelegramBotLib
                                     WriteLine("Для использования команды /echo нужно зарегистрироваться, с помощью команды /start.");
                                 break;
                             case BotConstants.CommandAddTask:
-                                try
-                                {
-                                    CommandAddTask();
-                                }
-                                catch (TaskCountLimitException taskCountLimitException)
-                                {
-                                    WriteLine(taskCountLimitException.Message);
-                                }
-                                catch (TaskLengthLimitException taskLengthLimitException)
-                                {
-                                    WriteLine(taskLengthLimitException.Message);
-                                }
-                                catch (DuplicateTaskException duplicateTaskException)
-                                {
-                                    WriteLine(duplicateTaskException.Message);
-                                }
+                                CommandAddTask();
                                 break;
                             case BotConstants.CommandShowTasks:
                                 CommandShowTasks();
@@ -109,9 +94,17 @@ namespace TelegramBotLib
                                 break;
                         }
                     }
-                    catch
+                    catch (TaskCountLimitException taskCountLimitException)
                     {
-                        WriteLine("Неизвестная ошибка приобработке команд.");
+                        WriteLine(taskCountLimitException.Message);
+                    }
+                    catch (TaskLengthLimitException taskLengthLimitException)
+                    {
+                        WriteLine(taskLengthLimitException.Message);
+                    }
+                    catch (DuplicateTaskException duplicateTaskException)
+                    {
+                        WriteLine(duplicateTaskException.Message);
                     }
                 }
             }
