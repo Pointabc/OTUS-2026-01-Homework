@@ -13,6 +13,8 @@ namespace TelegramBotLib
         public const string CommandAddTask = "/addtask";
         public const string CommandShowTasks = "/showtasks";
         public const string CommandRemoveTask = "/removetask";
+        public const string CommandCompleteTask = "/completetask";
+        public const string CommandShowAllTasks = "/showalltasks";
 
         #endregion
 
