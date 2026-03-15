@@ -4,12 +4,15 @@ namespace TelegramBotLib
 {
     public class Core
     {
-        string _userName = string.Empty;
-        List<Task> _tasks = new List<Task>();
+        ToDoUser _toDoUser = new ToDoUser(string.Empty);
+        List<ToDoItem> _toDoItems = new List<ToDoItem>();
         long _taskNumber = 0;
         long _taskCount = 0;
         string _userCommand = string.Empty;
         string _commandArgument = string.Empty;
+
+        public static long maxNumber = 100;
+        public static long maxTaskDiscriptionLength = 100;
 
         public void Start()
         {
@@ -23,12 +26,12 @@ namespace TelegramBotLib
                 try
                 {
                     var maxTaskNumber = ParseAndValidateLong(inputMaxTaskNumber, BotConstants.MinTaskNumber, BotConstants.MaxTaskNumber);
-                    Task.maxNumber = maxTaskNumber;
+                    maxNumber = maxTaskNumber;
                 }
                 catch (ArgumentException argumentException)
                 {
                     WriteLine(argumentException.Message);
-                    Task.maxNumber = BotConstants.MaxTaskNumber;
+                    maxNumber = BotConstants.MaxTaskNumber;
                 }
 
                 #endregion
@@ -40,13 +43,12 @@ namespace TelegramBotLib
 
                 try
                 {
-                    var maxTaskDiscriptionLength = ParseAndValidateLong(inputMaxTaskDiscriptionLength, BotConstants.MinTaskDiscriptioLength, BotConstants.MaxTaskDiscriptionLength);
-                    Task.maxTaskDiscriptionLength = maxTaskDiscriptionLength;
+                    maxTaskDiscriptionLength = ParseAndValidateLong(inputMaxTaskDiscriptionLength, BotConstants.MinTaskDiscriptioLength, BotConstants.MaxTaskDiscriptionLength); ;
                 }
                 catch (ArgumentException argumentException)
                 {
                     WriteLine(argumentException.Message);
-                    Task.maxTaskDiscriptionLength = BotConstants.MaxTaskDiscriptionLength;
+                    maxTaskDiscriptionLength = BotConstants.MaxTaskDiscriptionLength;
                 }
 
                 #endregion
@@ -74,7 +76,7 @@ namespace TelegramBotLib
                                 WriteLine("Работа с ботом завершена.");
                                 return;
                             case BotConstants.CommandEcho:
-                                if (!string.IsNullOrWhiteSpace(_userName))
+                                if (!string.IsNullOrWhiteSpace(_toDoUser.TelegramUserName))
                                     CommandEcho(_commandArgument);
                                 else
                                     WriteLine("Для использования команды /echo нужно зарегистрироваться, с помощью команды /start.");
@@ -87,6 +89,12 @@ namespace TelegramBotLib
                                 break;
                             case BotConstants.CommandRemoveTask:
                                 CommandRemoveTask();
+                                break;
+                            case BotConstants.CommandCompleteTask:
+                                CommandCompleteTask(_commandArgument);
+                                break;
+                            case BotConstants.CommandShowAllTasks:
+                                CommandShowAllTasks();
                                 break;
                             default:
                                 WriteLine("Неизвестная команда.");
@@ -157,19 +165,19 @@ namespace TelegramBotLib
         /// </summary>
         void CommandStart()
         {
-            if (!string.IsNullOrWhiteSpace(_userName))
+            if (!string.IsNullOrWhiteSpace(_toDoUser.TelegramUserName))
             {
-                WriteLine($"Привет, {_userName}, я твой бот. Введи команду и получи результат.");
+                WriteLine($"Привет, {_toDoUser.TelegramUserName}, я твой бот. Введи команду и получи результат.");
             }
             else
             {
                 Write("Представьтесь: ");
 
-                while (string.IsNullOrWhiteSpace(_userName))
+                while (string.IsNullOrWhiteSpace(_toDoUser.TelegramUserName))
                 {
-                    _userName = ReadLine();
+                    _toDoUser.TelegramUserName = ReadLine();
                 }
-                WriteLine($"Рад тебя видеть, {_userName}.");
+                WriteLine($"Рад тебя видеть, {_toDoUser.TelegramUserName}.");
             }
         }
 
@@ -184,8 +192,10 @@ namespace TelegramBotLib
             WriteLine($"{BotConstants.CommandInfo} - Вывести информацию о Telegram боте.");
             WriteLine($"{BotConstants.CommandEcho} - Вывести, то что ввел пользователь.");
             WriteLine($"{BotConstants.CommandAddTask} - Добавить задчу.");
-            WriteLine($"{BotConstants.CommandShowTasks} - Показать задачи.");
+            WriteLine($"{BotConstants.CommandShowTasks} - Вывести задачи в работе.");
             WriteLine($"{BotConstants.CommandRemoveTask} - Удалить задачу.");
+            WriteLine($"{BotConstants.CommandCompleteTask} - Установить статус задачи на Завершена.");
+            WriteLine($"{BotConstants.CommandShowAllTasks} - Вывести все задачи.");
             WriteLine($"{BotConstants.CommandExit} - Выход.");
         }
 
@@ -219,8 +229,8 @@ namespace TelegramBotLib
         void CommandAddTask()
         {
             // Проверить на максимально допустимое кол-во задач.
-            if (_taskCount == Task.maxNumber)
-                throw new TaskCountLimitException(Task.maxNumber);
+            if (_taskCount == maxNumber)
+                throw new TaskCountLimitException(maxNumber);
 
             Write(GetCasePhrase("Введите описание задачи: "));
 
@@ -228,34 +238,35 @@ namespace TelegramBotLib
             ValidateString(taskDescription);
 
             // Проверить на максисально допустимую длину.
-            if (!string.IsNullOrWhiteSpace(taskDescription) && taskDescription.Length > Task.maxTaskDiscriptionLength)
-                throw new TaskLengthLimitException(taskDescription.Length, Task.maxTaskDiscriptionLength);
+            if (!string.IsNullOrWhiteSpace(taskDescription) && taskDescription.Length > maxTaskDiscriptionLength)
+                throw new TaskLengthLimitException(taskDescription.Length, maxTaskDiscriptionLength);
 
             // Проверить на дубликаты задач.
-            var isExists = _tasks.Any(t => t.Description == taskDescription);
+            var isExists = _toDoItems.Any(t => t.Name == taskDescription);
             if (isExists)
                 throw new DuplicateTaskException(taskDescription);
 
-            _tasks.Add(new Task(taskDescription, ++_taskNumber));
+            _toDoItems.Add(new ToDoItem(_toDoUser, taskDescription, ++_taskNumber));
             _taskCount++;
             WriteLine("Задача добавлена.");
         }
 
         /// <summary>
-        /// Отобразить задачи.
+        /// Вывести задачи в работе.
         /// </summary>
         /// <returns>False - список задач пустой, иначе True.</returns>
         bool CommandShowTasks()
         {
-            if (!_tasks.Any())
+            if (!_toDoItems.Any())
             {
                 WriteLine(GetCasePhrase("Список задач пуст."));
                 return false;
             }
 
             WriteLine(GetCasePhrase("Cписок задач:"));
-            foreach (var task in _tasks)
-                WriteLine($"{task.Number:d6} {task.Description}");
+            var tasks = _toDoItems.Where(t => t.State == ToDoItemState.Active);
+            foreach (var task in tasks)
+                WriteLine($"Задача: {task.Number:d6} - {task.Name} - {task.CreatedAt} - {task.Id}");
 
             return true;
         }
@@ -275,16 +286,57 @@ namespace TelegramBotLib
                 return;
             }
 
-            var taskToRemove = _tasks.Where(t => t.Number == taskNumber).FirstOrDefault();
+            var taskToRemove = _toDoItems.Where(t => t.Number == taskNumber).FirstOrDefault();
 
             if (taskToRemove != null)
             {
-                _tasks.Remove(taskToRemove);
+                _toDoItems.Remove(taskToRemove);
                 WriteLine($"Задача с номером {taskNumber} удалена");
                 _taskCount--;
             }
             else
                 WriteLine(string.Format(BotConstants.MessageNoTaskFoundByNumber, userInput, BotConstants.CommandRemoveTask));
+        }
+
+        /// <summary>
+        /// Установить статус задачи на Завершена.
+        /// </summary>
+        void CommandCompleteTask(string commandArgument)
+        {
+            var isCommandArgumentEmpty = string.IsNullOrWhiteSpace(commandArgument);
+            if (!Guid.TryParse(commandArgument, out var taskGuid) || isCommandArgumentEmpty)
+            {
+                if (isCommandArgumentEmpty)
+                    WriteLine($"Id задачи не указан.");
+                else
+                    WriteLine($"Id {commandArgument.Trim()} задачи некорректный.");
+
+                return;
+            }
+
+            var task = _toDoItems.Where(t => Equals(t.Id, taskGuid)).FirstOrDefault();
+            if (task == null)
+            {
+                WriteLine($"Задача с id = {taskGuid} не найдена.");
+                return;
+            }
+
+            task.State = ToDoItemState.Completed;
+            task.StateChangedAt = DateTime.Now;
+            WriteLine($"Задача с Id {taskGuid} завершена.");
+        }
+
+        /// <summary>
+        /// Отобразить все задачи.
+        /// </summary>
+        void CommandShowAllTasks()
+        {
+            if (!_toDoItems.Any())
+                WriteLine(GetCasePhrase("Список задач пуст."));
+
+            WriteLine(GetCasePhrase("Cписок задач:"));
+            foreach (var task in _toDoItems)
+                WriteLine($"({task.State}) - {task.Number:d6} - {task.Name} - {task.CreatedAt} - {task.Id}");
         }
 
         #endregion
@@ -300,8 +352,8 @@ namespace TelegramBotLib
             var subPhrase = phrase.Substring(1);
             var firstChar = phrase[0];
 
-            if (!string.IsNullOrWhiteSpace(_userName))
-                return $"{_userName}, {char.ToLower(firstChar)}{subPhrase}";
+            if (!string.IsNullOrWhiteSpace(_toDoUser.TelegramUserName))
+                return $"{_toDoUser.TelegramUserName}, {char.ToLower(firstChar)}{subPhrase}";
 
             return $"{char.ToUpper(firstChar)}{subPhrase}";
         }
