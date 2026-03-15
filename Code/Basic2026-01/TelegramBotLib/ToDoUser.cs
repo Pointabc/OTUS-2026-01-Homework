@@ -3,9 +3,9 @@ namespace TelegramBotLib
 {
     internal class ToDoUser
     {
-        Guid UserId;
+        public Guid UserId;
         public string TelegramUserName;
-        DateTime RegisteredAt;
+        public DateTime RegisteredAt;
 
         public ToDoUser(string telegramUserName)
         {

@@ -29,7 +29,7 @@ namespace TelegramBotLib
 
         #endregion
 
-        #region Константы.
+        #region Константы - пределы значений.
 
         public const long MinTaskNumber = 1;
         public const long MaxTaskNumber = 100;

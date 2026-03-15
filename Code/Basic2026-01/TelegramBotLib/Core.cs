@@ -11,6 +11,9 @@ namespace TelegramBotLib
         string _userCommand = string.Empty;
         string _commandArgument = string.Empty;
 
+        public static long maxNumber = 100;
+        public static long maxTaskDiscriptionLength = 100;
+
         public void Start()
         {
             try
@@ -23,12 +26,12 @@ namespace TelegramBotLib
                 try
                 {
                     var maxTaskNumber = ParseAndValidateLong(inputMaxTaskNumber, BotConstants.MinTaskNumber, BotConstants.MaxTaskNumber);
-                    ToDoItem.maxNumber = maxTaskNumber;
+                    maxNumber = maxTaskNumber;
                 }
                 catch (ArgumentException argumentException)
                 {
                     WriteLine(argumentException.Message);
-                    ToDoItem.maxNumber = BotConstants.MaxTaskNumber;
+                    maxNumber = BotConstants.MaxTaskNumber;
                 }
 
                 #endregion
@@ -40,13 +43,12 @@ namespace TelegramBotLib
 
                 try
                 {
-                    var maxTaskDiscriptionLength = ParseAndValidateLong(inputMaxTaskDiscriptionLength, BotConstants.MinTaskDiscriptioLength, BotConstants.MaxTaskDiscriptionLength);
-                    ToDoItem.maxTaskDiscriptionLength = maxTaskDiscriptionLength;
+                    maxTaskDiscriptionLength = ParseAndValidateLong(inputMaxTaskDiscriptionLength, BotConstants.MinTaskDiscriptioLength, BotConstants.MaxTaskDiscriptionLength); ;
                 }
                 catch (ArgumentException argumentException)
                 {
                     WriteLine(argumentException.Message);
-                    ToDoItem.maxTaskDiscriptionLength = BotConstants.MaxTaskDiscriptionLength;
+                    maxTaskDiscriptionLength = BotConstants.MaxTaskDiscriptionLength;
                 }
 
                 #endregion
@@ -227,8 +229,8 @@ namespace TelegramBotLib
         void CommandAddTask()
         {
             // Проверить на максимально допустимое кол-во задач.
-            if (_taskCount == ToDoItem.maxNumber)
-                throw new TaskCountLimitException(ToDoItem.maxNumber);
+            if (_taskCount == maxNumber)
+                throw new TaskCountLimitException(maxNumber);
 
             Write(GetCasePhrase("Введите описание задачи: "));
 
@@ -236,8 +238,8 @@ namespace TelegramBotLib
             ValidateString(taskDescription);
 
             // Проверить на максисально допустимую длину.
-            if (!string.IsNullOrWhiteSpace(taskDescription) && taskDescription.Length > ToDoItem.maxTaskDiscriptionLength)
-                throw new TaskLengthLimitException(taskDescription.Length, ToDoItem.maxTaskDiscriptionLength);
+            if (!string.IsNullOrWhiteSpace(taskDescription) && taskDescription.Length > maxTaskDiscriptionLength)
+                throw new TaskLengthLimitException(taskDescription.Length, maxTaskDiscriptionLength);
 
             // Проверить на дубликаты задач.
             var isExists = _toDoItems.Any(t => t.Name == taskDescription);
