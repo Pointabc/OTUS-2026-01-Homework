@@ -6,8 +6,7 @@ namespace TelegramBotLib
     {
         ToDoUser _toDoUser = new ToDoUser(string.Empty);
         List<ToDoItem> _toDoItems = new List<ToDoItem>();
-        long _taskNumber = 0;
-        long _taskCount = 0;
+        long _maxTaskNumber = 0;
         string _userCommand = string.Empty;
         string _commandArgument = string.Empty;
 
@@ -229,7 +228,7 @@ namespace TelegramBotLib
         void CommandAddTask()
         {
             // Проверить на максимально допустимое кол-во задач.
-            if (_taskCount == maxNumber)
+            if (_maxTaskNumber == maxNumber)
                 throw new TaskCountLimitException(maxNumber);
 
             Write(GetCasePhrase("Введите описание задачи: "));
@@ -246,8 +245,8 @@ namespace TelegramBotLib
             if (isExists)
                 throw new DuplicateTaskException(taskDescription);
 
-            _toDoItems.Add(new ToDoItem(_toDoUser, taskDescription, ++_taskNumber));
-            _taskCount++;
+            _toDoItems.Add(new ToDoItem(_toDoUser, taskDescription));
+            _maxTaskNumber++;
             WriteLine("Задача добавлена.");
         }
 
@@ -265,8 +264,11 @@ namespace TelegramBotLib
 
             WriteLine(GetCasePhrase("Cписок задач:"));
             var tasks = _toDoItems.Where(t => t.State == ToDoItemState.Active);
+            var taskNumber = 1;
             foreach (var task in tasks)
-                WriteLine($"Задача: {task.Number:d6} - {task.Name} - {task.CreatedAt} - {task.Id}");
+            {
+                WriteLine($"Задача: {taskNumber++}. {task.Name} - {task.CreatedAt} - {task.Id}");
+            }
 
             return true;
         }
@@ -280,19 +282,30 @@ namespace TelegramBotLib
 
             var userInput = ReadLine()?.Trim();
 
-            if (!long.TryParse(userInput, out var taskNumber))
+            if (!long.TryParse(userInput, out var taskNumber) || taskNumber > _toDoItems.Count)
             {
                 WriteLine(string.Format(BotConstants.MessageNoTaskFoundByNumber, userInput, BotConstants.CommandRemoveTask));
                 return;
             }
 
-            var taskToRemove = _toDoItems.Where(t => t.Number == taskNumber).FirstOrDefault();
+            // Найти задачу для удаления.
+            ToDoItem taskToRemove = null;
+            long number = 1;
+            foreach (var task in _toDoItems)
+            {
+                if (number == taskNumber)
+                {
+                    taskToRemove = task;
+                    break;
+                }
+                number++;
+            }
 
             if (taskToRemove != null)
             {
                 _toDoItems.Remove(taskToRemove);
                 WriteLine($"Задача с номером {taskNumber} удалена");
-                _taskCount--;
+                _maxTaskNumber--;
             }
             else
                 WriteLine(string.Format(BotConstants.MessageNoTaskFoundByNumber, userInput, BotConstants.CommandRemoveTask));
@@ -335,8 +348,9 @@ namespace TelegramBotLib
                 WriteLine(GetCasePhrase("Список задач пуст."));
 
             WriteLine(GetCasePhrase("Cписок задач:"));
+            var taskNumber = 1;
             foreach (var task in _toDoItems)
-                WriteLine($"({task.State}) - {task.Number:d6} - {task.Name} - {task.CreatedAt} - {task.Id}");
+                WriteLine($"{taskNumber++}. ({task.State}) - {task.Name} - {task.CreatedAt} - {task.Id}");
         }
 
         #endregion
