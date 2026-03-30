@@ -23,10 +23,15 @@ namespace TelegramBotLib
         public ToDoItem Add(ToDoUser user, string name)
         {
             if (string.IsNullOrWhiteSpace(name))
-                return null;
+                throw new ArgumentException($"Описание задачи не должно быть пустым.");
 
             if (name.Length > _maxTaskDiscriptionLength)
                 throw new TaskLengthLimitException(name.Length, _maxTaskDiscriptionLength);
+
+            // Проверить на дубликаты.
+            var task = _toDoItems.Where(x => x.Name == name).FirstOrDefault();
+            if (task != null)
+                throw new DuplicateTaskException(task.Name);
 
             // Проверить на максимальное кол-во задач.
             _taskCount++;
