@@ -11,8 +11,8 @@ namespace TelegramBotLib
         List<ToDoItem> _toDoItems = new List<ToDoItem>();
         long _taskCount = 0;
 
-        static long _maxNumber = 2;
-        static long _maxTaskDiscriptionLength = 2;
+        long _maxNumber = 2;
+        long _maxTaskDiscriptionLength = 2;
 
         /// <summary>
         /// Добавить задачу.
@@ -64,7 +64,7 @@ namespace TelegramBotLib
         /// <returns>Активные задачи.</returns>
         public IReadOnlyList<ToDoItem> GetActiveByUserId(Guid userId)
         {
-            return [.. _toDoItems.Where(x => x.State == ToDoItemState.Active)];
+            return [.. _toDoItems.Where(x => x.State == ToDoItemState.Active && x.User.UserId == userId)];
         }
 
         /// <summary>
@@ -74,7 +74,7 @@ namespace TelegramBotLib
         /// <returns>Задачи пользователя.</returns>
         public IReadOnlyList<ToDoItem> GetAllByUserId(Guid userId)
         {
-            return _toDoItems;
+            return _toDoItems.Where(x => x.User.UserId == userId).ToList();
         }
 
         /// <summary>

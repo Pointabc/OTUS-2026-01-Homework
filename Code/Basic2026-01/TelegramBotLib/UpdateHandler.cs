@@ -40,23 +40,7 @@ namespace TelegramBotLib
                         botClient.SendMessage(chat, $"Привет, {toDoUser.TelegramUserName}");
                         break;
                     case BotConstants.CommandHelp:
-                        var messageHelp = new StringBuilder();
-                        messageHelp.AppendLine("Список команд:");
-                        messageHelp.AppendLine($"{BotConstants.CommandStart} - Начать работать с ботом.");
-                        messageHelp.AppendLine($"{BotConstants.CommandHelp} - Вывести команды.");
-                        messageHelp.AppendLine($"{BotConstants.CommandInfo} - Вывести информацию о Telegram боте.");
-
-                        if (toDoUser != null)
-                        {
-                            messageHelp.AppendLine($"{BotConstants.CommandAddTask} - Добавить задчу.");
-                            messageHelp.AppendLine($"{BotConstants.CommandShowTasks} - Вывести задачи в работе.");
-                            messageHelp.AppendLine($"{BotConstants.CommandRemoveTask} - Удалить задачу.");
-                            messageHelp.AppendLine($"{BotConstants.CommandCompleteTask} - Установить статус задачи на Завершена.");
-                            messageHelp.AppendLine($"{BotConstants.CommandShowAllTasks} - Вывести все задачи.");
-                            messageHelp.AppendLine($"{BotConstants.CommandExit} - Выход.");
-                        }
-
-                        botClient.SendMessage(update.Message.Chat, messageHelp.ToString().Trim());
+                        CommandHelp(toDoUser, botClient, update);
                         break;
                     case BotConstants.CommandInfo:
                         var messageInfo = new StringBuilder();
@@ -174,6 +158,7 @@ namespace TelegramBotLib
                         break;
                     default:
                         botClient.SendMessage(update.Message.Chat, "Неизвестная команда.");
+                        CommandHelp(toDoUser, botClient, update);
                         break;
                 }
             }
@@ -181,6 +166,30 @@ namespace TelegramBotLib
             {
                 botClient.SendMessage(update.Message.Chat, e.Message);
             }
+        }
+
+        /// <summary>
+        /// Вывести список команд.
+        /// </summary>
+        void CommandHelp(ToDoUser toDoUser, ITelegramBotClient botClient, Update update)
+        {
+            var messageHelp = new StringBuilder();
+            messageHelp.AppendLine("Список команд:");
+            messageHelp.AppendLine($"{BotConstants.CommandStart} - Начать работать с ботом.");
+            messageHelp.AppendLine($"{BotConstants.CommandHelp} - Вывести команды.");
+            messageHelp.AppendLine($"{BotConstants.CommandInfo} - Вывести информацию о Telegram боте.");
+
+            if (toDoUser != null)
+            {
+                messageHelp.AppendLine($"{BotConstants.CommandAddTask} - Добавить задчу.");
+                messageHelp.AppendLine($"{BotConstants.CommandShowTasks} - Вывести задачи в работе.");
+                messageHelp.AppendLine($"{BotConstants.CommandRemoveTask} - Удалить задачу.");
+                messageHelp.AppendLine($"{BotConstants.CommandCompleteTask} - Установить статус задачи на Завершена.");
+                messageHelp.AppendLine($"{BotConstants.CommandShowAllTasks} - Вывести все задачи.");
+                messageHelp.AppendLine($"{BotConstants.CommandExit} - Выход.");
+            }
+
+            botClient.SendMessage(update.Message.Chat, messageHelp.ToString().Trim());
         }
 
         /// <summary>
