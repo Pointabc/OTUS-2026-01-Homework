@@ -28,14 +28,5 @@ namespace TelegramBotLib
         public const string MessageNoTaskFoundByNumber = "Задача с номером '{0}' не найдена. Используйте команду {1} и введите существующий номер задачи.";
 
         #endregion
-
-        #region Константы - пределы значений.
-
-        public const long MinTaskNumber = 1;
-        public const long MaxTaskNumber = 100;
-        public const long MinTaskDiscriptioLength = 1;
-        public const long MaxTaskDiscriptionLength = 100;
-
-        #endregion
     }
 }
