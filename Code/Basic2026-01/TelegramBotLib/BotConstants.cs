@@ -13,6 +13,8 @@ namespace TelegramBotLib
         public const string CommandAddTask = "/addtask";
         public const string CommandShowTasks = "/showtasks";
         public const string CommandRemoveTask = "/removetask";
+        public const string CommandCompleteTask = "/completetask";
+        public const string CommandShowAllTasks = "/showalltasks";
 
         #endregion
 
@@ -24,15 +26,6 @@ namespace TelegramBotLib
         #region Строковые константы.
 
         public const string MessageNoTaskFoundByNumber = "Задача с номером '{0}' не найдена. Используйте команду {1} и введите существующий номер задачи.";
-
-        #endregion
-
-        #region Константы.
-
-        public const long MinTaskNumber = 1;
-        public const long MaxTaskNumber = 100;
-        public const long MinTaskDiscriptioLength = 1;
-        public const long MaxTaskDiscriptionLength = 100;
 
         #endregion
     }
