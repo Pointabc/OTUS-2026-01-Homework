@@ -1,3 +1,3 @@
 ﻿
-var bot = new TelegramBotHomeFinancesLib.Core();
-await bot.StartAsync();
+var core = new TelegramBotHomeFinancesLib.Core();
+await core.StartAsync();

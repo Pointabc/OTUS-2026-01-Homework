@@ -8,6 +8,7 @@ namespace TelegramBotHomeFinancesLib
         public const string CommandStart = "/start";
         public const string CommandHelp = "/help";
         public const string CommandInfo = "/info";
+        public const string CommandExit = "/exit";
 
         #endregion
 
