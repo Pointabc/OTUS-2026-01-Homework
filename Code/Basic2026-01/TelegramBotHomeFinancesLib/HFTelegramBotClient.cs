@@ -11,6 +11,8 @@ namespace TelegramBotHomeFinancesLib
 {
     internal class HFTelegramBotClient
     {
+        UserService _userService = new UserService();
+
         public async Task StartAsync()
         {
             try
@@ -86,6 +88,7 @@ namespace TelegramBotHomeFinancesLib
             if (message.Text is not { } messageText)
                 return;
 
+            var user = _userService.GetUser(message.From.Id);
             var username = message.From?.Username;
             var chatId = message.Chat.Id;
 
@@ -103,7 +106,9 @@ namespace TelegramBotHomeFinancesLib
                 switch (messageText.ToLower())
                 {
                     case Constants.CommandStart:
-                        responseText = CommandStart(username);
+                        if (user == null)
+                            user = _userService.RegisterUser(message.From.Id, message.From.Username);
+                        responseText = CommandStart(user.TelegramUserName);
                         break;
                     case Constants.CommandHelp:
                         responseText = CommandHelp();
