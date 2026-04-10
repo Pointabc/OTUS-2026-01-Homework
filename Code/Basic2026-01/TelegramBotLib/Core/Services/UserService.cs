@@ -1,11 +1,12 @@
-﻿using TelegramBotLib.DataAccess;
-using TelegramBotLib.Entities;
+﻿using TelegramBotLib.Core.DataAccess;
+using TelegramBotLib.Core.Entities;
+using TelegramBotLib.Infrastructure.DataAccess;
 
-namespace TelegramBotLib.Services
+namespace TelegramBotLib.Core.Services
 {
     internal class UserService : IUserService
     {
-        private IUserRepository _inMemoryUserRepository = new DataAccess.InMemoryUserRepository();
+        private IUserRepository _inMemoryUserRepository = new InMemoryUserRepository();
 
         public ToDoUser? GetUser(long telegramUserId)
         {

@@ -1,7 +1,7 @@
-﻿using TelegramBotLib.Entities;
-using TelegramBotLib.DataAccess;
+﻿using TelegramBotLib.Core.DataAccess;
+using TelegramBotLib.Core.Entities;
 
-namespace TelegramBotLib.DataAccess
+namespace TelegramBotLib.Infrastructure.DataAccess
 {
     internal class InMemoryToDoRepository : IToDoRepository
     {

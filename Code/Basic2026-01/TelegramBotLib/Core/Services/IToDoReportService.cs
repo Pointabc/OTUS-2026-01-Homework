@@ -1,4 +1,4 @@
-﻿namespace TelegramBotLib.Services
+﻿namespace TelegramBotLib.Core.Services
 {
     internal interface IToDoReportService
     {

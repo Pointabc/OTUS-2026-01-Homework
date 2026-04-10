@@ -1,3 +1,3 @@
 ﻿
-var bot = new TelegramBotLib.Core();
+var bot = new TelegramBotLib.CoreTBot();
 bot.Start();

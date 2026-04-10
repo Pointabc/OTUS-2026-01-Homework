@@ -1,6 +1,6 @@
-﻿using TelegramBotLib.DataAccess;
+﻿using TelegramBotLib.Core.DataAccess;
 
-namespace TelegramBotLib.Services
+namespace TelegramBotLib.Core.Services
 {
     internal class ToDoReportService : IToDoReportService
     {

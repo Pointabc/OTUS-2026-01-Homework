@@ -1,8 +1,8 @@
-﻿using TelegramBotLib.DataAccess;
-using TelegramBotLib.Entities;
-using TelegramBotLib.Exceptions;
+﻿using TelegramBotLib.Core.DataAccess;
+using TelegramBotLib.Core.Entities;
+using TelegramBotLib.Core.Exceptions;
 
-namespace TelegramBotLib.Services
+namespace TelegramBotLib.Core.Services
 {
     internal class ToDoService : IToDoService
     {

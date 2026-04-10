@@ -1,6 +1,6 @@
-﻿using TelegramBotLib.Entities;
+﻿using TelegramBotLib.Core.Entities;
 
-namespace TelegramBotLib.Services
+namespace TelegramBotLib.Core.Services
 {
     internal interface IToDoService
     {

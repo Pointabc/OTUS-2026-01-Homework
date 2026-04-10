@@ -1,4 +1,4 @@
-﻿namespace TelegramBotLib.Entities
+﻿namespace TelegramBotLib.Core.Entities
 {
     public enum ToDoItemState { Active, Completed }
 

@@ -1,4 +1,4 @@
-﻿namespace TelegramBotLib.Exceptions
+﻿namespace TelegramBotLib.Core.Exceptions
 {
     internal class TaskCountLimitException : Exception
     {

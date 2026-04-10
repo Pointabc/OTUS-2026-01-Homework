@@ -1,11 +1,12 @@
 ﻿using Otus.ToDoList.ConsoleBot;
 using Otus.ToDoList.ConsoleBot.Types;
 using System.Text;
-using TelegramBotLib.Services;
-using TelegramBotLib.DataAccess;
-using TelegramBotLib.Entities;
+using TelegramBotLib.Infrastructure.DataAccess;
+using TelegramBotLib.Core.DataAccess;
+using TelegramBotLib.Core.Entities;
+using TelegramBotLib.Core.Services;
 
-namespace TelegramBotLib
+namespace TelegramBotLib.TelegramBot
 {
     public class UpdateHandler : IUpdateHandler
     {

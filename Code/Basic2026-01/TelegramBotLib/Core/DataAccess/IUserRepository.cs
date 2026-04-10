@@ -1,6 +1,6 @@
-﻿using TelegramBotLib.Entities;
+﻿using TelegramBotLib.Core.Entities;
 
-namespace TelegramBotLib.DataAccess
+namespace TelegramBotLib.Core.DataAccess
 {
     internal interface IUserRepository
     {
