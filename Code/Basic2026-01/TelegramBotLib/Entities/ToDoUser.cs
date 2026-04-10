@@ -1,5 +1,4 @@
-﻿
-namespace TelegramBotLib
+﻿namespace TelegramBotLib.Entities
 {
     internal class ToDoUser
     {

@@ -1,19 +1,21 @@
-﻿
-namespace TelegramBotLib
+﻿using TelegramBotLib.DataAccess;
+using TelegramBotLib.Entities;
+
+namespace TelegramBotLib.Services
 {
     internal class UserService : IUserService
     {
-        List<ToDoUser> _toDoUsers = new List<ToDoUser>();
+        private IUserRepository _inMemoryUserRepository = new DataAccess.InMemoryUserRepository();
 
         public ToDoUser? GetUser(long telegramUserId)
         {
-            return _toDoUsers.Where(x => x.TelegramUserId == telegramUserId).FirstOrDefault();
+            return _inMemoryUserRepository.GetUserByTelegramUserId(telegramUserId);
         }
 
         public ToDoUser RegisterUser(long telegramUserId, string telegramUserName)
         {
             var user = new ToDoUser(telegramUserName, telegramUserId);
-            _toDoUsers.Add(user);
+            _inMemoryUserRepository.Add(user);
 
             return user;
         }

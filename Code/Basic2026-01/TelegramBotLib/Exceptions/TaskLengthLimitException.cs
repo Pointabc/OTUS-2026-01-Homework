@@ -1,5 +1,4 @@
-﻿
-namespace TelegramBotLib
+﻿namespace TelegramBotLib.Exceptions
 {
     internal class TaskLengthLimitException : Exception
     {

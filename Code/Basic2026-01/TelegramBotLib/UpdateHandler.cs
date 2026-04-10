@@ -1,15 +1,28 @@
 ﻿using Otus.ToDoList.ConsoleBot;
 using Otus.ToDoList.ConsoleBot.Types;
 using System.Text;
+using TelegramBotLib.Services;
+using TelegramBotLib.DataAccess;
+using TelegramBotLib.Entities;
 
 namespace TelegramBotLib
 {
     public class UpdateHandler : IUpdateHandler
     {
-        ToDoService _toDoService = new ToDoService();
-        UserService _userService = new UserService();
+        IToDoService _toDoService;
+        IUserService _userService;
+        IToDoReportService _toDoReportService;
+        IToDoRepository _toDoRepository;
         string _userCommand = string.Empty;
         string _commandArgument = string.Empty;
+
+        public UpdateHandler()
+        {
+            _toDoRepository = new InMemoryToDoRepository();
+            _toDoService = new ToDoService(_toDoRepository);
+            _userService = new UserService();
+            _toDoReportService = new ToDoReportService(_toDoRepository);
+        }
 
         public void HandleUpdateAsync(ITelegramBotClient botClient, Update update)
         {
@@ -156,6 +169,35 @@ namespace TelegramBotLib
                             botClient.SendMessage(chat, $"Задача: {allTaskNumber++}. {taskForShow.Name} - {taskForShow.CreatedAt} - {taskForShow.Id}");
                         
                         break;
+                    case BotConstants.CommandReport:
+                        if (!ValidateUser(toDoUser, botClient, update))
+                            break;
+
+                        (int total, int completed, int active, DateTime generatedAt) = _toDoReportService.GetUserStats(toDoUser.UserId);
+                        botClient.SendMessage(chat, $"Статистика по задачам на {generatedAt}. Всего: {total}; Завершенных: {completed}; Активных: {active};");
+                        break;
+                    case BotConstants.CommandFind:
+                        if (!ValidateUser(toDoUser, botClient, update))
+                            break;
+
+                        if (string.IsNullOrWhiteSpace(_commandArgument))
+                        {
+                            botClient.SendMessage(chat, $"Формат команды {BotConstants.CommandFind} [Текст].");
+                            break;
+                        }
+
+                        var tasksFinded = _toDoService.Find(toDoUser, _commandArgument);
+                        var taskFindedNumber = 1;
+                        if (tasksFinded.Any())
+                        {
+                            foreach (var taskFinded in tasksFinded)
+                            {
+                                botClient.SendMessage(chat, $"Задача: {taskFindedNumber++}. {taskFinded.Name} - {taskFinded.CreatedAt} - {taskFinded.Id}");
+                            }
+                            break;
+                        }
+                        botClient.SendMessage(chat, "Задачи не найдены.");
+                        break;
                     default:
                         botClient.SendMessage(update.Message.Chat, "Неизвестная команда.");
                         CommandHelp(toDoUser, botClient, update);
@@ -186,6 +228,8 @@ namespace TelegramBotLib
                 messageHelp.AppendLine($"{BotConstants.CommandRemoveTask} - Удалить задачу.");
                 messageHelp.AppendLine($"{BotConstants.CommandCompleteTask} - Установить статус задачи на Завершена.");
                 messageHelp.AppendLine($"{BotConstants.CommandShowAllTasks} - Вывести все задачи.");
+                messageHelp.AppendLine($"{BotConstants.CommandReport} - Вывести отчет по задачам.");
+                messageHelp.AppendLine($"{BotConstants.CommandFind} - Вывести задачи, которые начинаются на префикс.");
                 messageHelp.AppendLine($"{BotConstants.CommandExit} - Выход.");
             }
 
