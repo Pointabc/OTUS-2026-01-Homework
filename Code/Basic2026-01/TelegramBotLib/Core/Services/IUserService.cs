@@ -1,4 +1,6 @@
-﻿namespace TelegramBotLib
+﻿using TelegramBotLib.Core.Entities;
+
+namespace TelegramBotLib.Core.Services
 {
     internal interface IUserService
     {

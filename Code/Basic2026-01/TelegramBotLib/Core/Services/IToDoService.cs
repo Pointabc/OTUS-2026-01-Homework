@@ -1,5 +1,6 @@
-﻿
-namespace TelegramBotLib
+﻿using TelegramBotLib.Core.Entities;
+
+namespace TelegramBotLib.Core.Services
 {
     internal interface IToDoService
     {
@@ -9,5 +10,6 @@ namespace TelegramBotLib
         ToDoItem Add(ToDoUser user, string name);
         void MarkCompleted(Guid id);
         void Delete(Guid id);
+        IReadOnlyList<ToDoItem> Find(ToDoUser user, string namePrefix);
     }
 }

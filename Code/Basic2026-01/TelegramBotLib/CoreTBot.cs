@@ -1,9 +1,10 @@
 ﻿using Otus.ToDoList.ConsoleBot;
+using TelegramBotLib.TelegramBot;
 using static System.Console;
 
 namespace TelegramBotLib
 {
-    public class Core
+    public class CoreTBot
     {
         public void Start()
         {

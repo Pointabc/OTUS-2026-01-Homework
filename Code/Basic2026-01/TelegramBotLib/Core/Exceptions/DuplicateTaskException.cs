@@ -1,5 +1,4 @@
-﻿
-namespace TelegramBotLib
+﻿namespace TelegramBotLib.Core.Exceptions
 {
     internal class DuplicateTaskException : Exception
     {
