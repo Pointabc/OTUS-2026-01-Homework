@@ -9,10 +9,12 @@ namespace TelegramBotLib.Core.Services
         {
             _iToDoRepository = iToDoRepository;
         }
-        public (int total, int completed, int active, DateTime generatedAt) GetUserStats(Guid userId)
+        public async Task<(int total, int completed, int active, DateTime generatedAt)> GetUserStats(Guid userId, CancellationToken cancellationToken)
         {
-            var totalTasks = _iToDoRepository.GetAllByUserId(userId).Count;
-            var activeTasks = _iToDoRepository.GetActiveByUserId(userId).Count;
+            var userTasks = await _iToDoRepository.GetAllByUserId(userId, cancellationToken);
+            var totalTasks = userTasks.Count;
+            var activeUserTasks = await _iToDoRepository.GetActiveByUserId(userId, cancellationToken);
+            var activeTasks = activeUserTasks.Count;
 
             return (totalTasks, totalTasks - activeTasks, activeTasks, DateTime.Now);
         }
