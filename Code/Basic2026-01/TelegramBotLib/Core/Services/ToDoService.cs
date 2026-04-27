@@ -22,7 +22,7 @@ namespace TelegramBotLib.Core.Services
         /// <param name="user">Пользователь.</param>
         /// <param name="name">Описание задачи.</param>
         /// <returns>Задача.</returns>
-        public ToDoItem Add(ToDoUser user, string name)
+        public async Task<ToDoItem> Add(ToDoUser user, string name, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException($"Описание задачи не должно быть пустым.");
@@ -31,7 +31,7 @@ namespace TelegramBotLib.Core.Services
                 throw new TaskLengthLimitException(name.Length, _maxTaskDiscriptionLength);
 
             // Проверить на дубликаты.
-            if (_toDoRepository.ExistsByName(user.UserId, name))
+            if (await _toDoRepository.ExistsByName(user.UserId, name, cancellationToken))
                 throw new DuplicateTaskException(name);
 
             // Проверить на максимальное кол-во задач.
@@ -43,7 +43,7 @@ namespace TelegramBotLib.Core.Services
             }
 
             var toDoItem = new ToDoItem(user, name);
-            _toDoRepository.Add(toDoItem);
+            await _toDoRepository.Add(toDoItem, cancellationToken);
 
             return toDoItem;
         }
@@ -52,9 +52,9 @@ namespace TelegramBotLib.Core.Services
         /// Удалить задачу.
         /// </summary>
         /// <param name="id">Guid задачи.</param>
-        public void Delete(Guid id)
+        public async Task Delete(Guid id, CancellationToken cancellationToken)
         {
-            _toDoRepository.Delete(id);
+            await _toDoRepository.Delete(id, cancellationToken);
         }
 
         /// <summary>
@@ -62,9 +62,9 @@ namespace TelegramBotLib.Core.Services
         /// </summary>
         /// <param name="userId">Guid пользователя.</param>
         /// <returns>Активные задачи.</returns>
-        public IReadOnlyList<ToDoItem> GetActiveByUserId(Guid userId)
+        public async Task<IReadOnlyList<ToDoItem>> GetActiveByUserId(Guid userId, CancellationToken cancellationToken)
         {
-            return [.. _toDoRepository.GetActiveByUserId(userId)];
+            return [.. await _toDoRepository.GetActiveByUserId(userId, cancellationToken)];
         }
 
         /// <summary>
@@ -72,26 +72,25 @@ namespace TelegramBotLib.Core.Services
         /// </summary>
         /// <param name="userId">Guid пользователя.</param>
         /// <returns>Задачи пользователя.</returns>
-        public IReadOnlyList<ToDoItem> GetAllByUserId(Guid userId)
+        public async Task<IReadOnlyList<ToDoItem>> GetAllByUserId(Guid userId, CancellationToken cancellationToken)
         {
-            return _toDoRepository.GetAllByUserId(userId);
+            return await _toDoRepository.GetAllByUserId(userId, cancellationToken);
         }
 
         /// <summary>
         /// Сделать задачу завершенной.
         /// </summary>
         /// <param name="id">Guid задачи.</param>
-        public void MarkCompleted(Guid id)
+        public async Task MarkCompleted(Guid id, CancellationToken cancellationToken)
         {
-            var toDoItem = _toDoRepository.Get(id);
-            //var task = _toDoItems.Where(x => x.Id == id).FirstOrDefault();
-            _toDoRepository.Update(toDoItem);
+            var toDoItem = await _toDoRepository.Get(id, cancellationToken);
+            await _toDoRepository.Update(toDoItem, cancellationToken);
         }
 
-        public IReadOnlyList<ToDoItem> Find(ToDoUser user, string namePrefix)
+        public async Task<IReadOnlyList<ToDoItem>> Find(ToDoUser user, string namePrefix, CancellationToken cancellationToken)
         {
-            var userTasks = _toDoRepository.GetAllByUserId(user.UserId);
-            return _toDoRepository.Find(user.UserId, (x) => { return x.Name.StartsWith(namePrefix) && x.State == ToDoItemState.Active; });
+            var userTasks = await _toDoRepository.GetAllByUserId(user.UserId, cancellationToken);
+            return await _toDoRepository.Find(user.UserId, (x) => { return x.Name.StartsWith(namePrefix) && x.State == ToDoItemState.Active; }, cancellationToken);
         }
     }
 }

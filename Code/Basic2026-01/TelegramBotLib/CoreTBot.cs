@@ -12,7 +12,8 @@ namespace TelegramBotLib
             {
                 var handler = new UpdateHandler();
                 var botClient = new ConsoleBotClient();
-                botClient.StartReceiving(handler);
+                var cancellationTokenSource = new CancellationTokenSource();
+                botClient.StartReceiving(handler, cancellationTokenSource.Token);
             }
             catch (Exception e)
             {

@@ -8,12 +8,12 @@ namespace TelegramBotLib.Core.Services
     {
         private IUserRepository _inMemoryUserRepository = new InMemoryUserRepository();
 
-        public ToDoUser? GetUser(long telegramUserId)
+        public async Task<ToDoUser?> GetUser(long telegramUserId, CancellationToken cancellationToken)
         {
             return _inMemoryUserRepository.GetUserByTelegramUserId(telegramUserId);
         }
 
-        public ToDoUser RegisterUser(long telegramUserId, string telegramUserName)
+        public async Task<ToDoUser> RegisterUser(long telegramUserId, string telegramUserName, CancellationToken cancellationToken)
         {
             var user = new ToDoUser(telegramUserName, telegramUserId);
             _inMemoryUserRepository.Add(user);

@@ -7,44 +7,44 @@ namespace TelegramBotLib.Infrastructure.DataAccess
     {
         List<ToDoItem> _toDoItems = new List<ToDoItem>();
 
-        public void Add(ToDoItem item)
+        public async Task Add(ToDoItem item, CancellationToken cancellationToken)
         {
             _toDoItems.Add(item);
         }
 
-        public int CountActive(Guid userId)
+        public async Task<int> CountActive(Guid userId, CancellationToken cancellationToken)
         {
             return _toDoItems.Where(x => x.User.UserId == userId && x.State == ToDoItemState.Active).Count();
         }
 
-        public void Delete(Guid id)
+        public async Task Delete(Guid id, CancellationToken cancellationToken)
         {
-            var toDoItem = Get(id);
+            var toDoItem = await Get(id, cancellationToken);
             if (toDoItem != null)
                 _toDoItems.Remove(toDoItem);
         }
 
-        public bool ExistsByName(Guid userId, string name)
+        public async Task<bool> ExistsByName(Guid userId, string name, CancellationToken cancellationToken)
         {
             return _toDoItems.Where(x => x.User.UserId == userId && x.Name == name).Any();
         }
 
-        public ToDoItem? Get(Guid id)
+        public async Task<ToDoItem?> Get(Guid id, CancellationToken cancellationToken)
         {
             return _toDoItems.Where(x => x.Id == id).FirstOrDefault();
         }
 
-        public IReadOnlyList<ToDoItem> GetActiveByUserId(Guid userId)
+        public async Task<IReadOnlyList<ToDoItem>> GetActiveByUserId(Guid userId, CancellationToken cancellationToken)
         {
             return _toDoItems.Where(x => x.User.UserId == userId && x.State == ToDoItemState.Active).ToList();
         }
 
-        public IReadOnlyList<ToDoItem> GetAllByUserId(Guid userId)
+        public async Task<IReadOnlyList<ToDoItem>> GetAllByUserId(Guid userId, CancellationToken cancellationToken)
         {
             return _toDoItems.Where(x => x.User.UserId == userId).ToList();
         }
 
-        public void Update(ToDoItem item)
+        public async Task Update(ToDoItem item, CancellationToken cancellationToken)
         {
             var toDoItem = _toDoItems.Where(x => Equals(x, item)).FirstOrDefault();
             if (toDoItem != null)
@@ -54,7 +54,7 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             }
         }
 
-        public IReadOnlyList<ToDoItem> Find(Guid userId, Func<ToDoItem, bool> predicate)
+        public async Task<IReadOnlyList<ToDoItem>> Find(Guid userId, Func<ToDoItem, bool> predicate, CancellationToken cancellationToken)
         {
             return _toDoItems.Where(x => x.User.UserId == userId && predicate(x)).ToList();
         }
