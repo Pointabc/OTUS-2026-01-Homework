@@ -1,4 +1,9 @@
-﻿using Otus.ToDoList.ConsoleBot;
+﻿using System.Net;
+using Telegram.Bot;
+using Telegram.Bot.Polling;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBotLib.TelegramBot;
 using static System.Console;
 
@@ -6,14 +11,112 @@ namespace TelegramBotLib
 {
     public class CoreTBot
     {
-        public void Start()
+        public async Task Start()
         {
             try
             {
+                #region WebProxy
+
+                // Добавить прокси.
+                string? webProxy = Environment.GetEnvironmentVariable("WebProxyForTelegramBot", EnvironmentVariableTarget.User);
+
+                if (string.IsNullOrWhiteSpace(webProxy))
+                {
+                    WriteLine("Environment not found. Please set the WebProxyForTelegramBot environment variable.");
+                    return;
+                }
+                var proxy = new WebProxy(webProxy);
+                var httpClientHandler = new SocketsHttpHandler
+                {
+                    Proxy = proxy,
+                    UseProxy = true
+                };
+
+                var httpClient = new HttpClient(httpClientHandler);
+
+                #endregion
+
+                #region Создать botClient
+
                 var handler = new UpdateHandler();
-                var botClient = new ConsoleBotClient();
+
+                // Get token from environment variable
+                string? token = Environment.GetEnvironmentVariable("ToDoTelegramBotTokenOTUSBasic", EnvironmentVariableTarget.User);
+
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    WriteLine("Bot token not found. Please set the TELEGRAM_BOT_TOKEN environment variable.");
+                    return;
+                }
+
                 var cancellationTokenSource = new CancellationTokenSource();
-                botClient.StartReceiving(handler, cancellationTokenSource.Token);
+                var cancellationToken = cancellationTokenSource.Token;
+                var botClient = new TelegramBotClient(token, httpClient, cancellationToken);
+
+                #endregion
+
+                #region Создать меню и описание команд.
+
+                // Создаем список команд
+                var commands = new List<BotCommand>
+                {
+                    new BotCommand { Command = "start", Description = "Начать работать с ботом." },
+                    new BotCommand { Command = "help", Description = "Вывести команды." },
+                    new BotCommand { Command = "info", Description = "Вывести информацию о Telegram боте." },
+                    new BotCommand { Command = "addtask", Description = "Добавить задчу." },
+                    new BotCommand { Command = "showtasks", Description = "Вывести задачи в работе." },
+                    new BotCommand { Command = "removetask", Description = "Удалить задачу." },
+                    new BotCommand { Command = "completetask", Description = "Установить статус задачи на Завершена." },
+                    new BotCommand { Command = "showalltasks", Description = "Вывести все задачи." },
+                    new BotCommand { Command = "report", Description = "Вывести отчет по задачам." },
+                    new BotCommand { Command = "find", Description = "Вывести задачи, которые начинаются на префикс." },
+                    new BotCommand { Command = "exit", Description = "Выход." },
+                };
+
+                // Устанавливаем команды
+                await botClient.SetMyCommands(commands);
+
+                #endregion
+
+                // StartReceiving does not block the caller thread. Receiving is done on the ThreadPool.
+                ReceiverOptions receiveroptions = new()
+                {
+                    AllowedUpdates = Array.Empty<UpdateType>()    // receive all update types
+                };
+
+                botClient.StartReceiving(handler, receiveroptions, cancellationToken);
+                var me = await botClient.GetMe();
+                WriteLine($"{me.FirstName} запущен!");
+                WriteLine("Нажмите клавишу A для выхода.");
+
+                // Отмена асинхронных операции и остановка приложения при нажатии клавиши A.
+                await Task.Run(() =>
+                {
+                    while (true)
+                    {
+                        var key = ReadKey(true);
+                        if (key.Key == ConsoleKey.A)
+                        {
+                            cancellationTokenSource.Cancel();
+                            WriteLine("Bot stopping...");
+                            break;
+                        }
+                        else
+                        {
+                            WriteLine($"Id телеграм бота: {me.Id}.");
+                        }
+                    }
+                });
+
+                try
+                {
+                    await Task.Delay(Timeout.Infinite, cancellationToken); // Устанавливаем бесконечную задержку.
+                }
+                catch (TaskCanceledException)
+                {
+                    // Ожидаемое исключение - просто игнорируем
+                    WriteLine("Bot stopped.");
+                }
             }
             catch (Exception e)
             {
