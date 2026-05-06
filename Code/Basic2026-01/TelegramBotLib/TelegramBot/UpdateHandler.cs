@@ -24,7 +24,8 @@ namespace TelegramBotLib.TelegramBot
 
         public UpdateHandler()
         {
-            _toDoRepository = new InMemoryToDoRepository();
+            //_toDoRepository = new InMemoryToDoRepository();
+            _toDoRepository = new FileToDoRepository(BotConstants.FileRepositoryFolderName);
             _toDoService = new ToDoService(_toDoRepository);
             _userService = new UserService();
             _toDoReportService = new ToDoReportService(_toDoRepository);
@@ -119,14 +120,14 @@ namespace TelegramBotLib.TelegramBot
                         if (!isValidUser)
                             break;
 
-                        var tasksForRemove = await _toDoService.GetActiveByUserId(toDoUser.UserId, cancellationToken);
+                        var tasksForRemove = await _toDoService.GetAllByUserId(toDoUser.UserId, cancellationToken);
                         if (!tasksForRemove.Any())
                         {
                             await botClient.SendMessage(chat, "Список задач пуст.", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
                             break;
                         }
 
-                        if (!long.TryParse(_commandArgument, out var taskNumberForRemove) || taskNumberForRemove > tasksForRemove.Count)
+                        if (!Guid.TryParse(_commandArgument, out var taskGuidForRemove))
                         {
                             await botClient.SendMessage(
                                 chat,
@@ -137,22 +138,12 @@ namespace TelegramBotLib.TelegramBot
                         }
 
                         // Найти задачу для удаления.
-                        ToDoItem taskToRemove = null;
-                        long number = 1;
-                        foreach (var taskForRemove in tasksForRemove)
-                        {
-                            if (number == taskNumberForRemove)
-                            {
-                                taskToRemove = taskForRemove;
-                                break;
-                            }
-                            number++;
-                        }
+                        ToDoItem? taskToRemove = tasksForRemove.Where(x => x.Id == taskGuidForRemove).FirstOrDefault();
 
                         if (taskToRemove != null)
                         {
                             await _toDoService.Delete(taskToRemove.Id, cancellationToken);
-                            await botClient.SendMessage(chat, $"Задача с номером {number} удалена", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
+                            await botClient.SendMessage(chat, $"Задача с номером {taskToRemove.Id} удалена", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
                         }
                         else
                             await botClient.SendMessage(

@@ -27,7 +27,7 @@
         #region Строковые константы.
 
         public const string MessageNoTaskFoundByNumber = "Задача с номером '{0}' не найдена. Используйте команду {1} и введите существующий номер задачи.";
-
+        public const string FileRepositoryFolderName = "FileRepository";
         #endregion
     }
 }
