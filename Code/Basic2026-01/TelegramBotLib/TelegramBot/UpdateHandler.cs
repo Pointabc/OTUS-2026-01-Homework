@@ -25,7 +25,7 @@ namespace TelegramBotLib.TelegramBot
         public UpdateHandler()
         {
             //_toDoRepository = new InMemoryToDoRepository();
-            _toDoRepository = new FileToDoRepository(BotConstants.FileRepositoryFolderName);
+            _toDoRepository = new FileToDoRepository(BotConstants.FileToDoItemRepositoryFolderName);
             _toDoService = new ToDoService(_toDoRepository);
             _userService = new UserService();
             _toDoReportService = new ToDoReportService(_toDoRepository);

@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using Telegram.Bot.Types;
 using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Entities;
 
@@ -9,28 +8,28 @@ namespace TelegramBotLib.Infrastructure.DataAccess
     {
         string _repositoryFolder;
 
-        public FileToDoRepository(string repositoryFolder)
+        public FileToDoRepository(string toDoItemRepositoryFolder)
         {
-            if (string.IsNullOrWhiteSpace(repositoryFolder))
+            if (string.IsNullOrWhiteSpace(toDoItemRepositoryFolder))
                 throw new ArgumentNullException("Некорректное имя папки для репозитория ToDoItem.");
 
-            if (!Directory.Exists(repositoryFolder))
-                Directory.CreateDirectory(repositoryFolder);
+            if (!Directory.Exists(toDoItemRepositoryFolder))
+                Directory.CreateDirectory(toDoItemRepositoryFolder);
 
             string currentDirectory = Environment.CurrentDirectory;
-            _repositoryFolder = Path.Combine(currentDirectory, repositoryFolder);
+            _repositoryFolder = Path.Combine(currentDirectory, toDoItemRepositoryFolder);
 
-            // TODO VS 06052026 очистить папку для тестирования.
-            ClearRepository();
+            ClearToDoItemRepository();
         }
 
-        private void ClearRepository()
+        /// <summary>
+        /// Удалить хранилище для хранения задач.
+        /// </summary>
+        private void ClearToDoItemRepository()
         {
             var files = Directory.GetFiles(_repositoryFolder);
             foreach (var file in files)
-            {
                 File.Delete(file);
-            }
         }
 
         public async Task Add(ToDoItem item, CancellationToken cancellationToken)
@@ -52,7 +51,7 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             var files = Directory.GetFiles(_repositoryFolder, "*.json");
             foreach (var file in files)
             {
-                string json = File.ReadAllText(file);
+                string json = await File.ReadAllTextAsync(file, cancellationToken);
                 var toDoItem = JsonSerializer.Deserialize<ToDoItem>(json);
 
                 if (toDoItem != null && toDoItem.Id == id)
