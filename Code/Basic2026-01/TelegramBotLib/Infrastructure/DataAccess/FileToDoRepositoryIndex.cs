@@ -47,15 +47,23 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             return false;
         }
 
-        public Task Delete(Guid id, CancellationToken cancellationToken)
+        public async Task Delete(Guid id, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            // Перемоздаем файл.
+            if (File.Exists(_fileIndex))
+            {
+                File.Delete(_fileIndex);
+                using (File.Create(_fileIndex)) { }
+            }
+
+            // Перестраиваем индекс
+            await UpdateFileIndex();
         }
 
         /// <summary>
         /// Обновить файл-индекс.
         /// </summary>
-        public async Task UpdateFileIndex(CancellationToken cancellationToken)
+        public async Task UpdateFileIndex()
         {
             var toDoItemIndex = new List<ToDoItemIndex>();
             var toDoItemRepositoryFolder = Path.GetDirectoryName(_fileIndex);
@@ -67,7 +75,8 @@ namespace TelegramBotLib.Infrastructure.DataAccess
 
                 string json = File.ReadAllText(file);
                 var toDoItem = JsonSerializer.Deserialize<ToDoItem>(json);
-                if (await Find(toDoItem.User.UserId, x => x.ToDoItemId == toDoItem.Id, cancellationToken))
+
+                if (await Find(toDoItem.User.UserId, x => x.ToDoItemId == toDoItem.Id, CancellationToken.None))
                     continue;
 
                 toDoItemIndex.Add(new ToDoItemIndex { ToDoItemId = toDoItem.Id, UserId = toDoItem.User.UserId });
@@ -76,7 +85,7 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             if (!toDoItemIndex.Any())
                 return;
 
-            using (var writer = new StreamWriter(_fileIndex))
+            using (var writer = new StreamWriter(_fileIndex, true))
             {
                 foreach (var item in toDoItemIndex)
                 {

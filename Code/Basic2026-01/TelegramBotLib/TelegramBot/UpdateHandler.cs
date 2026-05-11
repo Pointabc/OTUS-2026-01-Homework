@@ -12,7 +12,7 @@ using static System.Console;
 
 namespace TelegramBotLib.TelegramBot
 {
-    public class UpdateHandler : IUpdateHandler
+    internal class UpdateHandler : IUpdateHandler
     {
         IToDoService _toDoService;
         IUserService _userService;
@@ -24,12 +24,12 @@ namespace TelegramBotLib.TelegramBot
         string _commandArgument = string.Empty;
         ReplyKeyboardMarkup _replyKeyboard;
 
-        public UpdateHandler((string pathToDoItemsRepository, string pathUsersRepositoty, string fileIndex) paths)
+        public UpdateHandler(string pathToDoItemsRepository, string pathUsersRepositoty, IToDoRepositoryIndex toDoRepositoryIndex)
         {
-            _toDoRepositoryIndex = new FileToDoRepositoryIndex(paths.fileIndex);
-            _toDoRepository = new FileToDoRepository(paths.pathToDoItemsRepository, _toDoRepositoryIndex);
+            _toDoRepositoryIndex = toDoRepositoryIndex;
+            _toDoRepository = new FileToDoRepository(pathToDoItemsRepository, _toDoRepositoryIndex);
             _toDoService = new ToDoService(_toDoRepository);
-            _userRepository = new FileUserRepository(paths.pathUsersRepositoty);
+            _userRepository = new FileUserRepository(pathUsersRepositoty);
             _userService = new UserService(_userRepository);
             _toDoReportService = new ToDoReportService(_toDoRepository);
             _replyKeyboard = new ReplyKeyboardMarkup();

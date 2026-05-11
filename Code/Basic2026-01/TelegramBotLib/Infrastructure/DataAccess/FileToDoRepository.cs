@@ -19,10 +19,6 @@ namespace TelegramBotLib.Infrastructure.DataAccess
 
             _toDoItemRepositoryFolder = toDoItemRepositoryFolder;
             _toDoRepositoryIndex = toDoRepositoryIndex;
-
-            var cancellationTokenSource = new CancellationTokenSource();
-            var cancellationToken = cancellationTokenSource.Token;
-            Task task = ((FileToDoRepositoryIndex)_toDoRepositoryIndex).UpdateFileIndex(cancellationToken);
         }
 
         /// <summary>
@@ -76,6 +72,7 @@ namespace TelegramBotLib.Infrastructure.DataAccess
                 if (toDoItem != null && toDoItem.Id == id)
                 {
                     File.Delete(file);
+                    await _toDoRepositoryIndex.Delete(id, cancellationToken);
                     break;
                 }
             }
