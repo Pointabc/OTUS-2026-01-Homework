@@ -11,26 +11,10 @@ namespace TelegramBotLib.Infrastructure.DataAccess
 
         public FileUserRepository(string userRepositoryFolder)
         {
-            if (string.IsNullOrWhiteSpace(userRepositoryFolder))
-                throw new ArgumentNullException("Некорректное имя папки для репозитория ToDoUser.");
-
             if (!Directory.Exists(userRepositoryFolder))
-                Directory.CreateDirectory(userRepositoryFolder);
+                throw new ArgumentException($"Папка {userRepositoryFolder} для репозитория пользователь не создана.");
 
-            string currentDirectory = Environment.CurrentDirectory;
-            _userRepositoryFolder = Path.Combine(currentDirectory, userRepositoryFolder);
-
-            ClearUserRepository();
-        }
-
-        /// <summary>
-        /// Удалить хранилище для хранения пользователей.
-        /// </summary>
-        private void ClearUserRepository()
-        {
-            var files = Directory.GetFiles(_userRepositoryFolder);
-            foreach (var file in files)
-                File.Delete(file);
+            _userRepositoryFolder = userRepositoryFolder;
         }
 
         public async Task Add(ToDoUser user, CancellationToken cancellationToken)

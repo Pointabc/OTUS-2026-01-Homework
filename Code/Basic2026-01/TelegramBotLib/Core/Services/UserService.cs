@@ -8,7 +8,12 @@ namespace TelegramBotLib.Core.Services
     internal class UserService : IUserService
     {
         //private IUserRepository _inMemoryUserRepository = new InMemoryUserRepository();
-        private IUserRepository _userRepository = new FileUserRepository(BotConstants.FileUserRepositoryFolderName);
+        private IUserRepository _userRepository;
+
+        public UserService(IUserRepository userRepository)
+        {
+            _userRepository = userRepository;
+        }
 
         public async Task<ToDoUser?> GetUser(long telegramUserId, CancellationToken cancellationToken)
         {

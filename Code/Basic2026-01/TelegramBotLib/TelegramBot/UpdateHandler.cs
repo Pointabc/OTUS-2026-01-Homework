@@ -16,18 +16,21 @@ namespace TelegramBotLib.TelegramBot
     {
         IToDoService _toDoService;
         IUserService _userService;
+        IUserRepository _userRepository;
         IToDoReportService _toDoReportService;
         IToDoRepository _toDoRepository;
+        IToDoRepositoryIndex _toDoRepositoryIndex;
         string _userCommand = string.Empty;
         string _commandArgument = string.Empty;
         ReplyKeyboardMarkup _replyKeyboard;
 
-        public UpdateHandler()
+        public UpdateHandler((string pathToDoItemsRepository, string pathUsersRepositoty, string fileIndex) paths)
         {
-            //_toDoRepository = new InMemoryToDoRepository();
-            _toDoRepository = new FileToDoRepository(BotConstants.FileToDoItemRepositoryFolderName);
+            _toDoRepositoryIndex = new FileToDoRepositoryIndex(paths.fileIndex);
+            _toDoRepository = new FileToDoRepository(paths.pathToDoItemsRepository, _toDoRepositoryIndex);
             _toDoService = new ToDoService(_toDoRepository);
-            _userService = new UserService();
+            _userRepository = new FileUserRepository(paths.pathUsersRepositoty);
+            _userService = new UserService(_userRepository);
             _toDoReportService = new ToDoReportService(_toDoRepository);
             _replyKeyboard = new ReplyKeyboardMarkup();
         }

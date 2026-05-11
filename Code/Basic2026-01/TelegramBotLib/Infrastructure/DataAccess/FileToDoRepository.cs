@@ -6,30 +6,23 @@ namespace TelegramBotLib.Infrastructure.DataAccess
 {
     internal class FileToDoRepository : IToDoRepository
     {
-        string _toDoItemRepositoryFolder;
-
-        public FileToDoRepository(string toDoItemRepositoryFolder)
-        {
-            if (string.IsNullOrWhiteSpace(toDoItemRepositoryFolder))
-                throw new ArgumentNullException("Некорректное имя папки для репозитория ToDoItem.");
-
-            if (!Directory.Exists(toDoItemRepositoryFolder))
-                Directory.CreateDirectory(toDoItemRepositoryFolder);
-
-            string currentDirectory = Environment.CurrentDirectory;
-            _toDoItemRepositoryFolder = Path.Combine(currentDirectory, toDoItemRepositoryFolder);
-
-            ClearToDoItemRepository();
-        }
-
         /// <summary>
-        /// Удалить задачи в хранилище для хранения задач.
+        /// Папка пользователя для хранения задач пользователя.
         /// </summary>
-        private void ClearToDoItemRepository()
+        string _toDoItemRepositoryFolder;
+        IToDoRepositoryIndex _toDoRepositoryIndex;
+
+        public FileToDoRepository(string toDoItemRepositoryFolder, IToDoRepositoryIndex toDoRepositoryIndex)
         {
-            var files = Directory.GetFiles(_toDoItemRepositoryFolder);
-            foreach (var file in files)
-                File.Delete(file);
+            if (!Directory.Exists(toDoItemRepositoryFolder))
+                throw new ArgumentException($"Папка {toDoItemRepositoryFolder} для репозитория задач не создана.");
+
+            _toDoItemRepositoryFolder = toDoItemRepositoryFolder;
+            _toDoRepositoryIndex = toDoRepositoryIndex;
+
+            var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
+            Task task = ((FileToDoRepositoryIndex)_toDoRepositoryIndex).UpdateFileIndex(cancellationToken);
         }
 
         /// <summary>
@@ -48,6 +41,7 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             string jsonString = JsonSerializer.Serialize(item);
 
             await File.WriteAllTextAsync(filePath, jsonString, cancellationToken);
+            await _toDoRepositoryIndex.Add(item, cancellationToken);
         }
 
         /// <summary>
@@ -69,9 +63,13 @@ namespace TelegramBotLib.Infrastructure.DataAccess
         /// <param name="cancellationToken">Токен отмены.</param>
         public async Task Delete(Guid id, CancellationToken cancellationToken)
         {
+            var fileIndex = ((FileToDoRepositoryIndex)_toDoRepositoryIndex).GetFileIndexName();
             var files = Directory.GetFiles(_toDoItemRepositoryFolder, "*.json", SearchOption.AllDirectories);
             foreach (var file in files)
             {
+                if (file.EndsWith(fileIndex))
+                    continue;
+
                 string json = await File.ReadAllTextAsync(file, cancellationToken);
                 var toDoItem = JsonSerializer.Deserialize<ToDoItem>(json);
 
