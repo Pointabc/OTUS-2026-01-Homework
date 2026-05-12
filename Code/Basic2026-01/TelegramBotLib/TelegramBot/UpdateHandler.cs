@@ -12,21 +12,25 @@ using static System.Console;
 
 namespace TelegramBotLib.TelegramBot
 {
-    public class UpdateHandler : IUpdateHandler
+    internal class UpdateHandler : IUpdateHandler
     {
         IToDoService _toDoService;
         IUserService _userService;
+        IUserRepository _userRepository;
         IToDoReportService _toDoReportService;
         IToDoRepository _toDoRepository;
+        IToDoRepositoryIndex _toDoRepositoryIndex;
         string _userCommand = string.Empty;
         string _commandArgument = string.Empty;
         ReplyKeyboardMarkup _replyKeyboard;
 
-        public UpdateHandler()
+        public UpdateHandler(string pathToDoItemsRepository, string pathUsersRepositoty, IToDoRepositoryIndex toDoRepositoryIndex)
         {
-            _toDoRepository = new InMemoryToDoRepository();
+            _toDoRepositoryIndex = toDoRepositoryIndex;
+            _toDoRepository = new FileToDoRepository(pathToDoItemsRepository, _toDoRepositoryIndex);
             _toDoService = new ToDoService(_toDoRepository);
-            _userService = new UserService();
+            _userRepository = new FileUserRepository(pathUsersRepositoty);
+            _userService = new UserService(_userRepository);
             _toDoReportService = new ToDoReportService(_toDoRepository);
             _replyKeyboard = new ReplyKeyboardMarkup();
         }
@@ -119,14 +123,14 @@ namespace TelegramBotLib.TelegramBot
                         if (!isValidUser)
                             break;
 
-                        var tasksForRemove = await _toDoService.GetActiveByUserId(toDoUser.UserId, cancellationToken);
+                        var tasksForRemove = await _toDoService.GetAllByUserId(toDoUser.UserId, cancellationToken);
                         if (!tasksForRemove.Any())
                         {
                             await botClient.SendMessage(chat, "Список задач пуст.", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
                             break;
                         }
 
-                        if (!long.TryParse(_commandArgument, out var taskNumberForRemove) || taskNumberForRemove > tasksForRemove.Count)
+                        if (!Guid.TryParse(_commandArgument, out var taskGuidForRemove))
                         {
                             await botClient.SendMessage(
                                 chat,
@@ -137,22 +141,12 @@ namespace TelegramBotLib.TelegramBot
                         }
 
                         // Найти задачу для удаления.
-                        ToDoItem taskToRemove = null;
-                        long number = 1;
-                        foreach (var taskForRemove in tasksForRemove)
-                        {
-                            if (number == taskNumberForRemove)
-                            {
-                                taskToRemove = taskForRemove;
-                                break;
-                            }
-                            number++;
-                        }
+                        ToDoItem? taskToRemove = tasksForRemove.Where(x => x.Id == taskGuidForRemove).FirstOrDefault();
 
                         if (taskToRemove != null)
                         {
                             await _toDoService.Delete(taskToRemove.Id, cancellationToken);
-                            await botClient.SendMessage(chat, $"Задача с номером {number} удалена", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
+                            await botClient.SendMessage(chat, $"Задача с номером {taskToRemove.Id} удалена", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
                         }
                         else
                             await botClient.SendMessage(

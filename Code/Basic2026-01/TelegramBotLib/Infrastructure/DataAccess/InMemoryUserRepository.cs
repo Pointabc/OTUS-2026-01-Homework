@@ -7,17 +7,17 @@ namespace TelegramBotLib.Infrastructure.DataAccess
     {
         List<ToDoUser> _toDoUsers = new List<ToDoUser>();
 
-        public void Add(ToDoUser user)
+        public async Task Add(ToDoUser user, CancellationToken cancellationToken)
         {
             _toDoUsers.Add(user);
         }
 
-        public ToDoUser? GetUser(Guid userId)
+        public async Task<ToDoUser?> GetUser(Guid userId, CancellationToken cancellationToken)
         {
             return _toDoUsers.Where(x => x.UserId == userId).FirstOrDefault();
         }
 
-        public ToDoUser? GetUserByTelegramUserId(long telegramUserId)
+        public async Task<ToDoUser?> GetUserByTelegramUserId(long telegramUserId, CancellationToken cancellationToken)
         {
             return _toDoUsers.Where(x => x.TelegramUserId == telegramUserId).FirstOrDefault();
         }
