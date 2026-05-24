@@ -3,8 +3,7 @@ using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
-using TelegramBotLib.Core.DataAccess;
+using TelegramBotLib.Core.Scenarios;
 using TelegramBotLib.Infrastructure.DataAccess;
 using TelegramBotLib.TelegramBot;
 using static System.Console;
@@ -38,13 +37,13 @@ namespace TelegramBotLib
 
                 #endregion
 
-                #region Создать botClient
+                #region Создать структуру хранилища
 
                 // Создать папку для хранения задач.
                 var toDoItemRepositoryFolder = BotConstants.FileToDoItemRepositoryFolderName;
                 if (!Directory.Exists(toDoItemRepositoryFolder))
                     Directory.CreateDirectory(toDoItemRepositoryFolder);
-                
+
                 // Создать папку для храниния пользователей.
                 var userRepositoryFolder = BotConstants.FileUserRepositoryFolderName;
                 if (!Directory.Exists(userRepositoryFolder))
@@ -56,14 +55,22 @@ namespace TelegramBotLib
                 if (!File.Exists(fileIndex))
                     using (File.Create(fileIndex)) { }
 
+                #endregion
+
+                #region Создать инфраструктуру для сценариев.
+
+                IEnumerable<IScenario> scenarios = new List<IScenario>();
+                var contextRepository = new InMemoryScenarioContextRepository();
+
+                #endregion
+
+                #region Создать botClient
+
                 var toDoRepositoryIndex = new FileToDoRepositoryIndex(fileIndex);
                 await toDoRepositoryIndex.UpdateFileIndex();
 
-                var handler = new UpdateHandler(toDoItemRepositoryFolder, userRepositoryFolder, toDoRepositoryIndex);
-
                 // Get token from environment variable
                 string? token = Environment.GetEnvironmentVariable("ToDoTelegramBotTokenOTUSBasic", EnvironmentVariableTarget.User);
-
                 if (string.IsNullOrWhiteSpace(token))
                 {
                     WriteLine("Bot token not found. Please set the TELEGRAM_BOT_TOKEN environment variable.");
@@ -73,6 +80,13 @@ namespace TelegramBotLib
                 var cancellationTokenSource = new CancellationTokenSource();
                 var cancellationToken = cancellationTokenSource.Token;
                 var botClient = new TelegramBotClient(token, httpClient, cancellationToken);
+                var handler = new UpdateHandler(
+                    toDoItemRepositoryFolder,
+                    userRepositoryFolder,
+                    toDoRepositoryIndex,
+                    scenarios,
+                    contextRepository,
+                    botClient);
 
                 #endregion
 
@@ -84,7 +98,7 @@ namespace TelegramBotLib
                     new BotCommand { Command = "start", Description = "Начать работать с ботом." },
                     new BotCommand { Command = "help", Description = "Вывести команды." },
                     new BotCommand { Command = "info", Description = "Вывести информацию о Telegram боте." },
-                    //new BotCommand { Command = "addtask", Description = "Добавить задчу." },
+                    new BotCommand { Command = "addtask", Description = "Добавить задчу." },
                     new BotCommand { Command = "showtasks", Description = "Вывести задачи в работе." },
                     //new BotCommand { Command = "removetask", Description = "Удалить задачу." },
                     //new BotCommand { Command = "completetask", Description = "Установить статус задачи на Завершена." },

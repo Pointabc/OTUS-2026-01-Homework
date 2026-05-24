@@ -6,6 +6,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Entities;
+using TelegramBotLib.Core.Scenarios;
 using TelegramBotLib.Core.Services;
 using TelegramBotLib.Infrastructure.DataAccess;
 using static System.Console;
@@ -23,8 +24,17 @@ namespace TelegramBotLib.TelegramBot
         string _userCommand = string.Empty;
         string _commandArgument = string.Empty;
         ReplyKeyboardMarkup _replyKeyboard;
+        IEnumerable<IScenario> _scenarios;
+        IScenarioContextRepository _contextRepository;
+        ITelegramBotClient? _botClient = null;
 
-        public UpdateHandler(string pathToDoItemsRepository, string pathUsersRepositoty, IToDoRepositoryIndex toDoRepositoryIndex)
+        public UpdateHandler(
+            string pathToDoItemsRepository,
+            string pathUsersRepositoty,
+            IToDoRepositoryIndex toDoRepositoryIndex,
+            IEnumerable<IScenario> scenarios,
+            IScenarioContextRepository contextRepository,
+            ITelegramBotClient botClient)
         {
             _toDoRepositoryIndex = toDoRepositoryIndex;
             _toDoRepository = new FileToDoRepository(pathToDoItemsRepository, _toDoRepositoryIndex);
@@ -33,6 +43,47 @@ namespace TelegramBotLib.TelegramBot
             _userService = new UserService(_userRepository);
             _toDoReportService = new ToDoReportService(_toDoRepository);
             _replyKeyboard = new ReplyKeyboardMarkup();
+            _scenarios = scenarios;
+            _contextRepository = contextRepository;
+            _botClient = botClient;
+        }
+
+        /// <summary>
+        /// Возвращает сессию/сценарий. Если сессия/сценарий не найден, то выбрасывать исключение.
+        /// </summary>
+        /// <param name="scenario">Тип сессии/сценария.</param>
+        /// <returns>Сессия/сценарий.</returns>
+        IScenario GetScenario(ScenarioType scenarioType)
+        {
+            // TODO VS c чем сравнивать scenarioType?
+            // TODO VS тут возможно нужно получать сценарий из _contextRepository.
+            /*var userId = 1; // Как получить пользователя.
+            var scenarioContext = await _contextRepository.GetContext(userId, CancellationToken.None);
+            if (scenarioContext?.CurrentScenario != null)
+                return scenarioContext;
+            else
+                throw new NullReferenceException($"Тип сессии/сценария {scenarioType} не найден.");*/
+
+            var scenarios = _scenarios.Where(x => x.CanHandle(scenarioType));
+            if (scenarios.Any())
+                return scenarios.First();
+            else
+                throw new NullReferenceException($"Тип сессии/сценария {scenarioType} не найден.");
+        }
+              
+        async Task ProcessScenario(ScenarioContext context, Update update, CancellationToken ct)
+        {
+            if (_botClient == null)
+                return;
+
+            var user = update.Message.From;
+            var scenario = GetScenario(context.CurrentScenario);
+            var scenarioResult = await scenario.HandleMessageAsync(_botClient, context, update, ct);
+
+            if (scenarioResult == ScenarioResult.Completed)
+                await _contextRepository.ResetContext(user.Id, ct);
+            else
+                await _contextRepository.SetContext(user.Id, context, ct);
         }
 
         public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
@@ -53,6 +104,13 @@ namespace TelegramBotLib.TelegramBot
                 var toDoUser = await _userService.GetUser(user.Id, cancellationToken);
                 // Получить команду и агрументы команды.
                 await GetUserCommandAndArgumentAsync(messageText, cancellationToken);
+
+                var scenarioContext = await _contextRepository.GetContext(user.Id, cancellationToken);
+                if (scenarioContext != null)
+                {
+                    await ProcessScenario(scenarioContext, update, cancellationToken);
+                    return;
+                }
 
                 // Обработать команду пользователя.
                 switch (_userCommand)
@@ -76,24 +134,23 @@ namespace TelegramBotLib.TelegramBot
                         break;
                     case BotConstants.CommandExit:
                         await botClient.SendMessage(chat, "Работа с ботом завершена.", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
-                        //Environment.Exit(0);
                         return;
                     case BotConstants.CommandAddTask:
                         var isValidUser = await ValidateUserAsync(toDoUser, botClient, update, _replyKeyboard, cancellationToken);
                         if (!isValidUser)
                             break;
 
-                        var task = await _toDoService.Add(toDoUser, _commandArgument, cancellationToken);
-                        if (task == null)
-                        {
-                            await botClient.SendMessage(
-                                chat,
-                                $"Нужно добавить описание задачи: {BotConstants.CommandAddTask} [Описание задачи] или создано слишком много задач.",
-                                replyMarkup: _replyKeyboard,
-                                cancellationToken: cancellationToken);
-                            break;
-                        }
-                        await botClient.SendMessage(chat, "Задача добавлена.", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
+                        #region Тут как-то надо начать работать со сессией/сценарием пользователя.
+                        
+                        var newScenarioContext = new ScenarioContext(ScenarioType.AddTask);
+                        newScenarioContext.UserId = toDoUser.TelegramUserId;
+                        var taskScenario = new AddTaskScenario(_userService, _toDoService);
+                        
+                        _scenarios = _scenarios.Append(taskScenario); // Нужно добавлять сценарий в хранилище класса.
+                        await ProcessScenario(newScenarioContext, update, cancellationToken);
+
+                        #endregion
+                        
                         break;
                     case BotConstants.CommandShowTasks:
                         isValidUser = await ValidateUserAsync(toDoUser, botClient, update, _replyKeyboard, cancellationToken);
@@ -299,6 +356,15 @@ namespace TelegramBotLib.TelegramBot
             }
         }
 
+        /// <summary>
+        /// Проверить пользователя.
+        /// </summary>
+        /// <param name="user">Пользователь.</param>
+        /// <param name="botClient">TelegramBot клиент.</param>
+        /// <param name="update">Обновленные данные от пользователя.</param>
+        /// <param name="replyKeyboard">Клавиатура Telegram бота.</param>
+        /// <param name="cancellationToken">Токен отмены.</param>
+        /// <returns>False - пользователь равен null (отправить сообщение анонимному пользователю о дальнейших действиях), иначе True.</returns>
         static async Task<bool> ValidateUserAsync(
             ToDoUser user,
             ITelegramBotClient botClient,
@@ -308,7 +374,8 @@ namespace TelegramBotLib.TelegramBot
         {
             if (user == null)
             {
-                await botClient.SendMessage(update.Message.Chat,
+                await botClient.SendMessage(
+                    update.Message.Chat,
                     $"Для начала работы используйте команду {BotConstants.CommandStart}.", replyMarkup: replyKeyboard,
                     cancellationToken: cancellationToken);
                 return false;
@@ -347,9 +414,10 @@ namespace TelegramBotLib.TelegramBot
             buttons.Add(new KeyboardButton[] { new KeyboardButton("/start") });
             if (isValidUser)
             {
-                buttons.Add(new KeyboardButton[] { new KeyboardButton("/showalltasks") });
-                buttons.Add(new KeyboardButton[] { new KeyboardButton("/showtasks") });
-                buttons.Add(new KeyboardButton[] { new KeyboardButton("/report") });
+                buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandAddTask) });
+                buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandShowAllTasks) });
+                buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandShowTasks) });
+                buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandReport) });
             }
             
             return new ReplyKeyboardMarkup(buttons) { ResizeKeyboard = true };

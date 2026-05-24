@@ -1,4 +1,5 @@
 ﻿using TelegramBotLib.Core.Entities;
+using TelegramBotLib.Infrastructure.DataAccess;
 
 namespace TelegramBotLib.Core.DataAccess
 {

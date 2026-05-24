@@ -1,5 +1,4 @@
-﻿
-namespace TelegramBotLib.Core.Entities
+﻿namespace TelegramBotLib.Infrastructure.DataAccess
 {
     /// <summary>
     /// Индекс для хранилища в виде json.
