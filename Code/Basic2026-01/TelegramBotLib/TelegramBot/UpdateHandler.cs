@@ -70,14 +70,16 @@ namespace TelegramBotLib.TelegramBot
             else
                 throw new NullReferenceException($"Тип сессии/сценария {scenarioType} не найден.");
         }
-              
+
         async Task ProcessScenario(ScenarioContext context, Update update, CancellationToken ct)
         {
             if (_botClient == null)
                 return;
 
             var user = update.Message.From;
+            //_contextRepository.GetContext(user.Id, CancellationToken.None);
             var scenario = GetScenario(context.CurrentScenario);
+
             var scenarioResult = await scenario.HandleMessageAsync(_botClient, context, update, ct);
 
             if (scenarioResult == ScenarioResult.Completed)
@@ -106,7 +108,7 @@ namespace TelegramBotLib.TelegramBot
                 await GetUserCommandAndArgumentAsync(messageText, cancellationToken);
 
                 var scenarioContext = await _contextRepository.GetContext(user.Id, cancellationToken);
-                if (scenarioContext != null)
+                if (scenarioContext != null && _userCommand != BotConstants.CommandCancel)
                 {
                     await ProcessScenario(scenarioContext, update, cancellationToken);
                     return;
@@ -141,16 +143,14 @@ namespace TelegramBotLib.TelegramBot
                             break;
 
                         #region Тут как-то надо начать работать со сессией/сценарием пользователя.
-                        
                         var newScenarioContext = new ScenarioContext(ScenarioType.AddTask);
                         newScenarioContext.UserId = toDoUser.TelegramUserId;
                         var taskScenario = new AddTaskScenario(_userService, _toDoService);
-                        
-                        _scenarios = _scenarios.Append(taskScenario); // Нужно добавлять сценарий в хранилище класса.
+                        _scenarios = _scenarios.Append(taskScenario).ToList();
                         await ProcessScenario(newScenarioContext, update, cancellationToken);
 
                         #endregion
-                        
+
                         break;
                     case BotConstants.CommandShowTasks:
                         isValidUser = await ValidateUserAsync(toDoUser, botClient, update, _replyKeyboard, cancellationToken);
@@ -299,6 +299,15 @@ namespace TelegramBotLib.TelegramBot
                         await botClient.SendMessage(chat, "Задачи не найдены.", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
 
                         break;
+                    case BotConstants.CommandCancel:
+                        //_replyKeyboard = await CreateKeyboardMarkup(toDoUser, botClient, update, cancellationToken);
+                        var context = await _contextRepository.GetContext(user.Id, cancellationToken);
+                        if (context == null)
+                            break;
+
+                        context.CurrentStep = "Cancel";
+                        await ProcessScenario(context, update, cancellationToken);
+                        break;
                     default:
                         await botClient.SendMessage(update.Message.Chat, "Неизвестная команда.", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
                         await CommandHelpAsync(toDoUser, botClient, update, cancellationToken);
@@ -419,7 +428,7 @@ namespace TelegramBotLib.TelegramBot
                 buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandShowTasks) });
                 buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandReport) });
             }
-            
+
             return new ReplyKeyboardMarkup(buttons) { ResizeKeyboard = true };
         }
     }
