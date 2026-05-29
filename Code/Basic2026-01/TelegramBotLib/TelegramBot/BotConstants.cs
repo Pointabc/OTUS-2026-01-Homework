@@ -16,6 +16,7 @@
         public const string CommandShowAllTasks = "/showalltasks";
         public const string CommandReport = "/report";
         public const string CommandFind = "/find";
+        public const string CommandCancel = "/cancel";
 
         #endregion
 
