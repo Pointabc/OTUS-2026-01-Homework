@@ -77,13 +77,15 @@ namespace TelegramBotLib.TelegramBot
                 return;
 
             var user = update.Message.From;
-            //_contextRepository.GetContext(user.Id, CancellationToken.None);
             var scenario = GetScenario(context.CurrentScenario);
 
             var scenarioResult = await scenario.HandleMessageAsync(_botClient, context, update, ct);
 
             if (scenarioResult == ScenarioResult.Completed)
+            {
+                _scenarios = Enumerable.Empty<IScenario>();
                 await _contextRepository.ResetContext(user.Id, ct);
+            }
             else
                 await _contextRepository.SetContext(user.Id, context, ct);
         }
@@ -306,6 +308,7 @@ namespace TelegramBotLib.TelegramBot
 
                         context.CurrentStep = "Cancel";
                         await ProcessScenario(context, update, cancellationToken);
+                        _scenarios = Enumerable.Empty<IScenario>();
                         break;
                     default:
                         await botClient.SendMessage(update.Message.Chat, "Неизвестная команда.", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);

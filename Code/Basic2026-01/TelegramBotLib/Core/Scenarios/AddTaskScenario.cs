@@ -37,6 +37,7 @@ namespace TelegramBotLib.Core.Scenarios
             var chat = update.Message.Chat;
             var currentStep = context.CurrentStep;
             ReplyKeyboardMarkup _replyKeyboard = await CreateKeyboardMarkupInScenario();
+            ReplyKeyboardMarkup _replyKeyboardDefault = await CreateKeyboardMarkup();
             var userInput = update.Message.Text;
 
             switch (currentStep)
@@ -94,15 +95,15 @@ namespace TelegramBotLib.Core.Scenarios
 
                     _toDoItem.Deadline = deadline;
                     scenarioResult = ScenarioResult.Completed;
-                    await bot.SendMessage(chat, "Задача добавлена.", cancellationToken: ct);
+                    await bot.SendMessage(chat, "Задача добавлена.", replyMarkup: _replyKeyboardDefault, cancellationToken: ct);
                     break;
                 case "Cancel":
                     // Если задачи создана на первом этапе (), удалить ее.
-                    var tempTask = await _toDoService.Find(toDoUser, _lastTaskDescription, ct);
-                    if (tempTask != null)
-                        await _toDoService.Delete(tempTask.FirstOrDefault().Id, ct);
+                    var tasks = await _toDoService.Find(toDoUser, _lastTaskDescription, ct);
+                    var tempTask = tasks.FirstOrDefault();
+                    if (tempTask != null && !string.IsNullOrWhiteSpace(_lastTaskDescription))
+                        await _toDoService.Delete(tempTask.Id, ct);
 
-                    ReplyKeyboardMarkup _replyKeyboardDefault = await CreateKeyboardMarkup();
                     scenarioResult = ScenarioResult.Completed;
                     context.CurrentStep = "Сценарий завершен.";
                     await bot.SendMessage(chat, "Операция отменена.", replyMarkup: _replyKeyboardDefault, cancellationToken: ct);
