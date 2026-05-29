@@ -25,9 +25,10 @@ namespace TelegramBotLib.Core.Services
         /// </summary>
         /// <param name="user">Пользователь.</param>
         /// <param name="name">Название задачи.</param>
+        /// <param name="deadline">Крайний срок выполнения задачи.</param>
         /// <param name="cancellationToken">Токен отмены.</param>
         /// <returns>Добавленная задача.</returns>
-        Task<ToDoItem> Add(ToDoUser user, string name, CancellationToken cancellationToken);
+        Task<ToDoItem> Add(ToDoUser user, string name, DateTime deadline, CancellationToken cancellationToken);
 
         /// <summary>
         /// Установить статус задачи на завершено.

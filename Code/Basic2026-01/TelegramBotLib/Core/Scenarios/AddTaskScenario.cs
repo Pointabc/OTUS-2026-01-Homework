@@ -1,4 +1,5 @@
-﻿using Telegram.Bot;
+﻿using System.Globalization;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBotLib.Core.Entities;
@@ -11,6 +12,8 @@ namespace TelegramBotLib.Core.Scenarios
     {
         IUserService _userService;
         IToDoService _toDoService;
+        ToDoItem _toDoItem;
+        string _lastTaskDescription = string.Empty;
 
         public AddTaskScenario(IUserService userService, IToDoService toDoService)
         {
@@ -33,22 +36,23 @@ namespace TelegramBotLib.Core.Scenarios
             var toDoUser = await _userService.GetUser(update.Message.From.Id, ct);
             var chat = update.Message.Chat;
             var currentStep = context.CurrentStep;
+            ReplyKeyboardMarkup _replyKeyboard = await CreateKeyboardMarkupInScenario();
+            var userInput = update.Message.Text;
 
             switch (currentStep)
             {
                 case null:
-                    ReplyKeyboardMarkup _replyKeyboard = await CreateKeyboardMarkupInScenario();
                     context.Data.Add(toDoUser.TelegramUserId.ToString(), toDoUser); // TODO VS Какой должен быть ключ? Возможно ключ toDoUser.UserId. Хранить toDoUser.
                     await bot.SendMessage(chat, "Введите название задачи:", replyMarkup: _replyKeyboard, cancellationToken: ct);
                     context.CurrentStep = "Name";
                     break;
                 case "Name":
-                    object? user;
-                    context.Data.TryGetValue(update.Message.From.Id.ToString(), out user);
-                    var toDoUserForAddTask = user as ToDoUser;
                     try
                     {
-                        var task = await _toDoService.Add(toDoUserForAddTask, update.Message.Text, ct);
+                        object? user;
+                        context.Data.TryGetValue(update.Message.From.Id.ToString(), out user);
+                        var toDoUserForAddTask = user as ToDoUser;
+                        var task = await _toDoService.Add(toDoUserForAddTask, userInput, DateTime.Now, ct);
                         if (task == null)
                         {
                             await bot.SendMessage(
@@ -58,17 +62,46 @@ namespace TelegramBotLib.Core.Scenarios
                             break;
                         }
 
-                        scenarioResult = ScenarioResult.Completed;
-                        context.CurrentStep = "Сценарий завершен.";
-                        await bot.SendMessage(chat, "Задача добавлена.", cancellationToken: ct);
+                        _toDoItem = task;
+                        _lastTaskDescription = userInput;
+                        context.CurrentStep = "Deadline";
+                        await bot.SendMessage(chat, "Введите срок выполнения (dd.MM.yyyy):", replyMarkup: _replyKeyboard, cancellationToken: ct);
                     }
                     catch (Exception ex)
                     {
-                        await bot.SendMessage(chat, ex.Message, cancellationToken: ct);
-                        await bot.SendMessage(chat, "Введите название задачи:", cancellationToken: ct);
+                        await bot.SendMessage(chat, ex.Message, replyMarkup: _replyKeyboard, cancellationToken: ct);
+                        switch (currentStep)
+                        {
+                            case "Name":
+                                await bot.SendMessage(chat, "Введите название задачи:", replyMarkup: _replyKeyboard, cancellationToken: ct);
+                                break;
+                            case "Deadline":
+                                await bot.SendMessage(chat, "Введите срок выполнения (dd.MM.yyyy):", replyMarkup: _replyKeyboard, cancellationToken: ct);
+                                break;
+                        }
                     }
                     break;
+                case "Deadline":
+                    // Проверить формат введенной даты.
+                    string format = "dd.MM.yyyy";
+                    DateTime deadline;
+                    DateTime.TryParseExact(userInput, format, CultureInfo.InvariantCulture, DateTimeStyles.None, out deadline);
+                    if (deadline == DateTime.MinValue)
+                    {
+                        await bot.SendMessage(chat, "Введите срок выполнения (dd.MM.yyyy):", replyMarkup: _replyKeyboard, cancellationToken: ct);
+                        break;
+                    }
+
+                    _toDoItem.Deadline = deadline;
+                    scenarioResult = ScenarioResult.Completed;
+                    await bot.SendMessage(chat, "Задача добавлена.", cancellationToken: ct);
+                    break;
                 case "Cancel":
+                    // Если задачи создана на первом этапе (), удалить ее.
+                    var tempTask = await _toDoService.Find(toDoUser, _lastTaskDescription, ct);
+                    if (tempTask != null)
+                        await _toDoService.Delete(tempTask.FirstOrDefault().Id, ct);
+
                     ReplyKeyboardMarkup _replyKeyboardDefault = await CreateKeyboardMarkup();
                     scenarioResult = ScenarioResult.Completed;
                     context.CurrentStep = "Сценарий завершен.";

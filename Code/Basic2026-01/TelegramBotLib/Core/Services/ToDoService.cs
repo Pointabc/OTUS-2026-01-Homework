@@ -22,7 +22,7 @@ namespace TelegramBotLib.Core.Services
         /// <param name="user">Пользователь.</param>
         /// <param name="name">Описание задачи.</param>
         /// <returns>Задача.</returns>
-        public async Task<ToDoItem> Add(ToDoUser user, string name, CancellationToken cancellationToken)
+        public async Task<ToDoItem> Add(ToDoUser user, string name, DateTime deadline, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException($"Описание задачи не должно быть пустым.");
@@ -42,7 +42,7 @@ namespace TelegramBotLib.Core.Services
                 throw new ArgumentException($"Можно создать задач: {_maxNumber}.");
             }
 
-            var toDoItem = new ToDoItem(user, name);
+            var toDoItem = new ToDoItem(user, name, deadline);
             await _toDoRepository.Add(toDoItem, cancellationToken);
 
             return toDoItem;

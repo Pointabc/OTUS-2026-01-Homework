@@ -300,7 +300,6 @@ namespace TelegramBotLib.TelegramBot
 
                         break;
                     case BotConstants.CommandCancel:
-                        //_replyKeyboard = await CreateKeyboardMarkup(toDoUser, botClient, update, cancellationToken);
                         var context = await _contextRepository.GetContext(user.Id, cancellationToken);
                         if (context == null)
                             break;
@@ -340,6 +339,7 @@ namespace TelegramBotLib.TelegramBot
                 messageHelp.AppendLine($"{BotConstants.CommandShowAllTasks} - Вывести все задачи.");
                 messageHelp.AppendLine($"{BotConstants.CommandReport} - Вывести отчет по задачам.");
                 messageHelp.AppendLine($"{BotConstants.CommandFind} - Вывести задачи, которые начинаются на префикс.");
+                messageHelp.AppendLine($"{BotConstants.CommandCancel} - Отменить сценарий.");
                 messageHelp.AppendLine($"{BotConstants.CommandExit} - Выход.");
             }
 

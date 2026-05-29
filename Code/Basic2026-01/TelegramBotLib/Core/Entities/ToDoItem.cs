@@ -10,12 +10,14 @@
         public DateTime CreatedAt { get; set; }
         public ToDoItemState State { get; set; }
         public DateTime? StateChangedAt { get; set; }
+        public DateTime Deadline { get; set; }
 
-        public ToDoItem(ToDoUser user, string name)
+        public ToDoItem(ToDoUser user, string name, DateTime deadline)
         {
             Id = Guid.NewGuid();
             User = user;
             Name = name;
+            Deadline = deadline;
             CreatedAt = DateTime.Now;
             State = ToDoItemState.Active;
         }
