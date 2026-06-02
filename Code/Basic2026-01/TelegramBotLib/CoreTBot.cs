@@ -55,6 +55,11 @@ namespace TelegramBotLib
                 if (!File.Exists(fileIndex))
                     using (File.Create(fileIndex)) { }
 
+                // Создать папку для хранения списков (категорий) для задач пользователей.
+                var listRepositoryFolder = BotConstants.FileListRepositoryFolderName;
+                if (!Directory.Exists(listRepositoryFolder))
+                    Directory.CreateDirectory(listRepositoryFolder);
+
                 #endregion
 
                 #region Создать инфраструктуру для сценариев.
@@ -83,6 +88,7 @@ namespace TelegramBotLib
                 var handler = new UpdateHandler(
                     toDoItemRepositoryFolder,
                     userRepositoryFolder,
+                    listRepositoryFolder,
                     toDoRepositoryIndex,
                     scenarios,
                     contextRepository,
@@ -105,7 +111,6 @@ namespace TelegramBotLib
                     new BotCommand { Command = "showalltasks", Description = "Вывести все задачи." },
                     new BotCommand { Command = "report", Description = "Вывести отчет по задачам." },
                     //new BotCommand { Command = "find", Description = "Вывести задачи, которые начинаются на префикс." },
-                    //new BotCommand { Command = "exit", Description = "Выход." },
                 };
 
                 // Устанавливаем команды

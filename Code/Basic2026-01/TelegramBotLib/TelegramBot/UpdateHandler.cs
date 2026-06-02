@@ -21,6 +21,7 @@ namespace TelegramBotLib.TelegramBot
         IToDoReportService _toDoReportService;
         IToDoRepository _toDoRepository;
         IToDoRepositoryIndex _toDoRepositoryIndex;
+        IToDoListRepository _toDoListRepository;
         string _userCommand = string.Empty;
         string _commandArgument = string.Empty;
         ReplyKeyboardMarkup _replyKeyboard;
@@ -31,6 +32,7 @@ namespace TelegramBotLib.TelegramBot
         public UpdateHandler(
             string pathToDoItemsRepository,
             string pathUsersRepositoty,
+            string pathToDoListRepository,
             IToDoRepositoryIndex toDoRepositoryIndex,
             IEnumerable<IScenario> scenarios,
             IScenarioContextRepository contextRepository,
@@ -38,6 +40,7 @@ namespace TelegramBotLib.TelegramBot
         {
             _toDoRepositoryIndex = toDoRepositoryIndex;
             _toDoRepository = new FileToDoRepository(pathToDoItemsRepository, _toDoRepositoryIndex);
+            _toDoListRepository = new FileToDoListRepository(pathToDoListRepository);
             _toDoService = new ToDoService(_toDoRepository);
             _userRepository = new FileUserRepository(pathUsersRepositoty);
             _userService = new UserService(_userRepository);
@@ -83,7 +86,7 @@ namespace TelegramBotLib.TelegramBot
 
             if (scenarioResult == ScenarioResult.Completed)
             {
-                _scenarios = Enumerable.Empty<IScenario>();
+                _scenarios = Enumerable.Empty<IScenario>(); // TODO VS по идее нужно удалять IScenario только для определенного пользователя.
                 await _contextRepository.ResetContext(user.Id, ct);
             }
             else

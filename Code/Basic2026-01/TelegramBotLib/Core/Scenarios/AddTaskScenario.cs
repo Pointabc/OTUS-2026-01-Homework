@@ -12,8 +12,8 @@ namespace TelegramBotLib.Core.Scenarios
     {
         IUserService _userService;
         IToDoService _toDoService;
-        ToDoItem _toDoItem;
-        string _lastTaskDescription = string.Empty;
+        ToDoItem _toDoItem;                         // Для работы на следующем этапе сценария.
+        string _lastTaskDescription = string.Empty; // Для работы на следующем этапе сценария.
 
         public AddTaskScenario(IUserService userService, IToDoService toDoService)
         {
@@ -53,7 +53,8 @@ namespace TelegramBotLib.Core.Scenarios
                         object? user;
                         context.Data.TryGetValue(update.Message.From.Id.ToString(), out user);
                         var toDoUserForAddTask = user as ToDoUser;
-                        var task = await _toDoService.Add(toDoUserForAddTask, userInput, DateTime.Now, ct);
+                        var toDoList = new ToDoList(string.Empty, toDoUserForAddTask); // TODO VS Возможно иначе создавать ToDoList.
+                        var task = await _toDoService.Add(toDoUserForAddTask, userInput, DateTime.Now, toDoList, ct);
                         if (task == null)
                         {
                             await bot.SendMessage(

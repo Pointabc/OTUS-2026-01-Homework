@@ -16,13 +16,7 @@ namespace TelegramBotLib.Core.Services
             _toDoRepository = toDoRepository;
         }
 
-        /// <summary>
-        /// Добавить задачу.
-        /// </summary>
-        /// <param name="user">Пользователь.</param>
-        /// <param name="name">Описание задачи.</param>
-        /// <returns>Задача.</returns>
-        public async Task<ToDoItem> Add(ToDoUser user, string name, DateTime deadline, CancellationToken cancellationToken)
+        public async Task<ToDoItem> Add(ToDoUser user, string name, DateTime deadline, ToDoList? list, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException($"Описание задачи не должно быть пустым.");
