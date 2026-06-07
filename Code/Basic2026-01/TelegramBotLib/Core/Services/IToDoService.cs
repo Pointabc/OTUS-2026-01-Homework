@@ -53,5 +53,14 @@ namespace TelegramBotLib.Core.Services
         /// <param name="cancellationToken">Токен отмены.</param>
         /// <returns>Задачи пользователя начинающиеся на префикс.</returns>
         Task<IReadOnlyList<ToDoItem>> Find(ToDoUser user, string namePrefix, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Получить задачи пользователя по списку (категории) для задач.
+        /// </summary>
+        /// <param name="userId">Гуид пользователя.</param>
+        /// <param name="listId">Гуид списка (категории) для задач.</param>
+        /// <param name="ct">Токен отмены.</param>
+        /// <returns>Задачи пользователя по списку (категории) для задач.</returns>
+        Task<IReadOnlyList<ToDoItem>> GetByUserIdAndList(Guid userId, Guid? listId, CancellationToken ct);
     }
 }

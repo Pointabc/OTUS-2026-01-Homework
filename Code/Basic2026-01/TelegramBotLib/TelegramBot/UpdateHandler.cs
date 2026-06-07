@@ -3,11 +3,13 @@ using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Entities;
 using TelegramBotLib.Core.Scenarios;
 using TelegramBotLib.Core.Services;
+using TelegramBotLib.DTO;
 using TelegramBotLib.Infrastructure.DataAccess;
 using static System.Console;
 
@@ -17,6 +19,7 @@ namespace TelegramBotLib.TelegramBot
     {
         IToDoService _toDoService;
         IUserService _userService;
+        IToDoListService _toDoListService;
         IUserRepository _userRepository;
         IToDoReportService _toDoReportService;
         IToDoRepository _toDoRepository;
@@ -41,7 +44,8 @@ namespace TelegramBotLib.TelegramBot
             _toDoRepositoryIndex = toDoRepositoryIndex;
             _toDoRepository = new FileToDoRepository(pathToDoItemsRepository, _toDoRepositoryIndex);
             _toDoListRepository = new FileToDoListRepository(pathToDoListRepository);
-            _toDoService = new ToDoService(_toDoRepository);
+            _toDoListService = new ToDoListService(_toDoListRepository);
+            _toDoService = new ToDoService(_toDoRepository, _toDoListService);
             _userRepository = new FileUserRepository(pathUsersRepositoty);
             _userService = new UserService(_userRepository);
             _toDoReportService = new ToDoReportService(_toDoRepository);
@@ -95,8 +99,41 @@ namespace TelegramBotLib.TelegramBot
 
         public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
+            //Telegram.Bot.Types.Enums.UpdateType.CallbackQuery
             try
             {
+                #region Обработка inline-кнопок
+
+                // Проверяем, что событие — это нажатие на инлайн-кнопку
+                if (update.Type == UpdateType.CallbackQuery)
+                {
+                    var callbackQuery = update.CallbackQuery;
+
+                    // Получаем ID чата и уникальный ID запроса (для ответа в Telegram)
+                    string callbackData = callbackQuery.Data;
+                    string callbackId = callbackQuery.Id;
+                    long chatId = callbackQuery.Message.Chat.Id;
+
+                    // Обрабатываем нажатие в зависимости от callbackData
+                    switch (callbackData)
+                    {
+                        case "show":
+                            await botClient.SendMessage(chatId, "Отобразить задачи.");
+                            break;
+                        case "addlist":
+                            await botClient.SendMessage(chatId, "Добавить список.");
+                            break;
+                        case "deletelist":
+                            await botClient.SendMessage(chatId, "Удалить список.");
+                            break;
+                        default:
+                            break;
+                    }
+                    return;
+                }
+
+                #endregion
+
                 // Only process Message updates: https://core.tetegram.org/bots/api#message
                 if (update.Message is not { } message)
                     return;
@@ -108,6 +145,7 @@ namespace TelegramBotLib.TelegramBot
                 // Получить пользователя и чат.
                 var user = update.Message.From;
                 var chat = update.Message.Chat;
+
                 var toDoUser = await _userService.GetUser(user.Id, cancellationToken);
                 // Получить команду и агрументы команды.
                 await GetUserCommandAndArgumentAsync(messageText, cancellationToken);
@@ -139,15 +177,12 @@ namespace TelegramBotLib.TelegramBot
                         messageInfo.Append($"Версия бота 0.0.1. Дата создания {BotConstants.CreatedDate}");
                         await botClient.SendMessage(update.Message.Chat, messageInfo.ToString(), replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
                         break;
-                    case BotConstants.CommandExit:
-                        await botClient.SendMessage(chat, "Работа с ботом завершена.", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
-                        return;
                     case BotConstants.CommandAddTask:
                         var isValidUser = await ValidateUserAsync(toDoUser, botClient, update, _replyKeyboard, cancellationToken);
                         if (!isValidUser)
                             break;
 
-                        #region Тут как-то надо начать работать со сессией/сценарием пользователя.
+                        #region Запустить сессиею/сценарий пользователя добавления задачи.
                         var newScenarioContext = new ScenarioContext(ScenarioType.AddTask);
                         newScenarioContext.UserId = toDoUser.TelegramUserId;
                         var taskScenario = new AddTaskScenario(_userService, _toDoService);
@@ -162,7 +197,36 @@ namespace TelegramBotLib.TelegramBot
                         if (!isValidUser)
                             break;
 
-                        var tasks = await _toDoService.GetActiveByUserId(toDoUser.UserId, cancellationToken);
+                        #region Inline-клавиатура.
+
+                        // Создаем клавиатуру
+                        InlineKeyboardMarkup inlineKeyboard = new(
+                            new[]
+                            {
+                                // Первый ряд кнопок.
+                                new[]
+                                {
+                                    InlineKeyboardButton.WithCallbackData(text: "📌 Без списка", callbackData: ToDoListCallbackDto.FromString("show").Action),
+                                },
+                                // Второй ряд (например, одна кнопка на всю ширину)
+                                new[]
+                                {
+                                    InlineKeyboardButton.WithCallbackData(text: "🆕 Добавить", callbackData: "addlist"),
+                                    InlineKeyboardButton.WithCallbackData(text: "❌ Удалить", callbackData: "deletelist"),
+                                }
+                            });
+
+                        // Отправляем сообщение с прикрепленной клавиатурой.
+                        Message message1 = await botClient.SendMessage(
+                            chat,
+                            text: "Выберите список",
+                            replyMarkup: inlineKeyboard,
+                            cancellationToken: cancellationToken
+                        );
+
+                        #endregion
+
+                        /*var tasks = await _toDoService.GetActiveByUserId(toDoUser.UserId, cancellationToken);
                         if (!tasks.Any())
                         {
                             await botClient.SendMessage(chat, "Список задач пуст.", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
@@ -178,7 +242,7 @@ namespace TelegramBotLib.TelegramBot
                                 $"Задача: {taskNumber++}. {taskForShow.Name} - {taskForShow.CreatedAt} - '{taskForShow.Id}'",
                                 replyMarkup: _replyKeyboard,
                                 cancellationToken: cancellationToken);
-                        }
+                        }*/
                         break;
                     case BotConstants.CommandRemoveTask:
                         isValidUser = await ValidateUserAsync(toDoUser, botClient, update, _replyKeyboard, cancellationToken);
@@ -236,29 +300,6 @@ namespace TelegramBotLib.TelegramBot
 
                         await _toDoService.MarkCompleted(taskGuid, cancellationToken);
                         await botClient.SendMessage(chat, $"Задача с Id {taskGuid} завершена.", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
-                        break;
-                    case BotConstants.CommandShowAllTasks:
-                        isValidUser = await ValidateUserAsync(toDoUser, botClient, update, _replyKeyboard, cancellationToken);
-                        if (!isValidUser)
-                            break;
-
-                        var allUserTasks = await _toDoService.GetAllByUserId(toDoUser.UserId, cancellationToken);
-                        if (!allUserTasks.Any())
-                        {
-                            await botClient.SendMessage(chat, "Список задач пуст.", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
-                            break;
-                        }
-
-                        await botClient.SendMessage(chat, "Cписок задач:", replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
-                        var allTaskNumber = 1;
-                        foreach (var taskForShow in allUserTasks)
-                        {
-                            await botClient.SendMessage(
-                                chat,
-                                $"Задача: {allTaskNumber++}. {taskForShow.Name} - {taskForShow.CreatedAt} - '{taskForShow.Id}'",
-                                replyMarkup: _replyKeyboard,
-                                cancellationToken: cancellationToken);
-                        }
                         break;
                     case BotConstants.CommandReport:
                         isValidUser = await ValidateUserAsync(toDoUser, botClient, update, _replyKeyboard, cancellationToken);
@@ -342,11 +383,9 @@ namespace TelegramBotLib.TelegramBot
                 messageHelp.AppendLine($"{BotConstants.CommandShowTasks} - Вывести задачи в работе.");
                 messageHelp.AppendLine($"{BotConstants.CommandRemoveTask} - Удалить задачу.");
                 messageHelp.AppendLine($"{BotConstants.CommandCompleteTask} - Установить статус задачи на Завершена.");
-                messageHelp.AppendLine($"{BotConstants.CommandShowAllTasks} - Вывести все задачи.");
                 messageHelp.AppendLine($"{BotConstants.CommandReport} - Вывести отчет по задачам.");
                 messageHelp.AppendLine($"{BotConstants.CommandFind} - Вывести задачи, которые начинаются на префикс.");
                 messageHelp.AppendLine($"{BotConstants.CommandCancel} - Отменить сценарий.");
-                messageHelp.AppendLine($"{BotConstants.CommandExit} - Выход.");
             }
 
             await botClient.SendMessage(update.Message.Chat, messageHelp.ToString().Trim(), replyMarkup: _replyKeyboard, cancellationToken: cancellationToken);
@@ -430,7 +469,6 @@ namespace TelegramBotLib.TelegramBot
             if (isValidUser)
             {
                 buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandAddTask) });
-                buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandShowAllTasks) });
                 buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandShowTasks) });
                 buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandReport) });
             }

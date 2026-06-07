@@ -7,13 +7,15 @@ namespace TelegramBotLib.Core.Services
     internal class ToDoService : IToDoService
     {
         IToDoRepository _toDoRepository;
+        IToDoListService _toDoListService;
         long _taskCount = 0;
         long _maxNumber = 20;
         long _maxTaskDiscriptionLength = 100;
 
-        public ToDoService(IToDoRepository toDoRepository)
+        public ToDoService(IToDoRepository toDoRepository, IToDoListService toDoListService)
         {
             _toDoRepository = toDoRepository;
+            _toDoListService = toDoListService;
         }
 
         public async Task<ToDoItem> Add(ToDoUser user, string name, DateTime deadline, ToDoList? list, CancellationToken cancellationToken)
@@ -42,39 +44,21 @@ namespace TelegramBotLib.Core.Services
             return toDoItem;
         }
 
-        /// <summary>
-        /// Удалить задачу.
-        /// </summary>
-        /// <param name="id">Guid задачи.</param>
         public async Task Delete(Guid id, CancellationToken cancellationToken)
         {
             await _toDoRepository.Delete(id, cancellationToken);
         }
 
-        /// <summary>
-        /// Получить не завершенные задачи пользователя.
-        /// </summary>
-        /// <param name="userId">Guid пользователя.</param>
-        /// <returns>Активные задачи.</returns>
         public async Task<IReadOnlyList<ToDoItem>> GetActiveByUserId(Guid userId, CancellationToken cancellationToken)
         {
             return [.. await _toDoRepository.GetActiveByUserId(userId, cancellationToken)];
         }
 
-        /// <summary>
-        /// Получить все задачи пользователя.
-        /// </summary>
-        /// <param name="userId">Guid пользователя.</param>
-        /// <returns>Задачи пользователя.</returns>
         public async Task<IReadOnlyList<ToDoItem>> GetAllByUserId(Guid userId, CancellationToken cancellationToken)
         {
             return await _toDoRepository.GetAllByUserId(userId, cancellationToken);
         }
 
-        /// <summary>
-        /// Сделать задачу завершенной.
-        /// </summary>
-        /// <param name="id">Guid задачи.</param>
         public async Task MarkCompleted(Guid id, CancellationToken cancellationToken)
         {
             var toDoItem = await _toDoRepository.Get(id, cancellationToken);
@@ -85,6 +69,12 @@ namespace TelegramBotLib.Core.Services
         {
             var userTasks = await _toDoRepository.GetAllByUserId(user.UserId, cancellationToken);
             return await _toDoRepository.Find(user.UserId, (x) => { return x.Name.StartsWith(namePrefix) && x.State == ToDoItemState.Active; }, cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<ToDoItem>> GetByUserIdAndList(Guid userId, Guid? listId, CancellationToken ct)
+        {
+            var userLists = await _toDoListService.GetUserLists(userId, ct);
+            return await _toDoRepository.Find(userId, x => userLists.Contains(x.List), ct);
         }
     }
 }

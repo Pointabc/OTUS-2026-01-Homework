@@ -132,7 +132,6 @@ namespace TelegramBotLib.Core.Scenarios
             var buttons = new List<KeyboardButton[]>();
             buttons.Add(new KeyboardButton[] { new KeyboardButton("/start") });
             buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandAddTask) });
-            buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandShowAllTasks) });
             buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandShowTasks) });
             buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandReport) });
 
