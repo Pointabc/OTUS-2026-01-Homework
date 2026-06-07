@@ -38,7 +38,7 @@ namespace TelegramBotLib.Core.Scenarios
             var currentStep = context.CurrentStep;
             ReplyKeyboardMarkup _replyKeyboard = await CreateKeyboardMarkupInScenario();
             ReplyKeyboardMarkup _replyKeyboardDefault = await CreateKeyboardMarkup();
-            var userInput = update.Message.Text;
+            var userInput = UpdateHandler.GetMessageFromUpdate(update);
 
             switch (currentStep)
             {
@@ -127,6 +127,10 @@ namespace TelegramBotLib.Core.Scenarios
             return new ReplyKeyboardMarkup(buttons) { ResizeKeyboard = true };
         }
 
+        /// <summary>
+        /// Создать клавиатуру по умолчанию.
+        /// </summary>
+        /// <returns>Клавиатура по умолчанию.</returns>
         private async Task<ReplyKeyboardMarkup> CreateKeyboardMarkup()
         {
             var buttons = new List<KeyboardButton[]>();

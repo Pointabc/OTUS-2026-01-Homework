@@ -6,10 +6,10 @@ namespace TelegramBotLib.DTO
         Guid? ToDoListId;
 
         /// <summary>
-        /// 
+        /// Создать объект ToDoListCallbackDto.
         /// </summary>
         /// <param name="input">Строка ввида "{action}|{toDoListId}|{prop2}.</param>
-        /// <returns></returns>
+        /// <returns>Объект ToDoListCallbackDto.</returns>
         public static new ToDoListCallbackDto FromString(string input)
         {
             var splitInput = input.Split('|');

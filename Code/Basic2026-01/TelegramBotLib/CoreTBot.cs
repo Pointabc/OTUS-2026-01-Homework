@@ -120,7 +120,14 @@ namespace TelegramBotLib
                 // StartReceiving does not block the caller thread. Receiving is done on the ThreadPool.
                 ReceiverOptions receiveroptions = new()
                 {
-                    AllowedUpdates = Array.Empty<UpdateType>()    // receive all update types
+                    //AllowedUpdates = Array.Empty<UpdateType>()    // receive all update types
+                    AllowedUpdates = new UpdateType[]
+                    {
+                        UpdateType.Message,          // для обычных сообщений.
+                        UpdateType.CallbackQuery,    // для нажатий на кнопки.
+                        UpdateType.EditedMessage,    // для отредактированных сообщений.
+                        // ... добавьте другие типы, если они нужны
+                    }
                 };
 
                 botClient.StartReceiving(handler, receiveroptions, cancellationToken);
