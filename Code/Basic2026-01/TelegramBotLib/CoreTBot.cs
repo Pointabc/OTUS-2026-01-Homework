@@ -103,7 +103,7 @@ namespace TelegramBotLib
                 {
                     new BotCommand { Command = "start", Description = "Начать работать с ботом." },
                     new BotCommand { Command = "help", Description = "Вывести команды." },
-                    new BotCommand { Command = "info", Description = "Вывести информацию о Telegram боте." },
+                    //new BotCommand { Command = "info", Description = "Вывести информацию о Telegram боте." },
                     new BotCommand { Command = "addtask", Description = "Добавить задчу." },
                     new BotCommand { Command = "show", Description = "Вывести задачи в работе." },
                     //new BotCommand { Command = "removetask", Description = "Удалить задачу." },

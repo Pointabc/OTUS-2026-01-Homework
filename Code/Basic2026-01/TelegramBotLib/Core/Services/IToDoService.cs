@@ -21,7 +21,7 @@ namespace TelegramBotLib.Core.Services
         Task<IReadOnlyList<ToDoItem>> GetActiveByUserId(Guid userId, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Добавить задачу.
+        /// Создать задачу.
         /// </summary>
         /// <param name="user">Пользователь.</param>
         /// <param name="name">Название задачи.</param>
@@ -30,6 +30,14 @@ namespace TelegramBotLib.Core.Services
         /// <param name="cancellationToken">Токен отмены.</param>
         /// <returns>Задача.</returns>
         Task<ToDoItem> Add(ToDoUser user, string name, DateTime deadline, ToDoList? list, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Создать задачу.
+        /// </summary>
+        /// <param name="toDoItem">Задача.</param>
+        /// <param name="ct">Токен отмены.</param>
+        /// <returns>Задача.</returns>
+        Task<ToDoItem> Add(ToDoItem toDoItem, CancellationToken ct);
 
         /// <summary>
         /// Установить статус задачи на завершено.

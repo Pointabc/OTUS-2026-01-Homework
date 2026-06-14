@@ -9,7 +9,6 @@ using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Entities;
 using TelegramBotLib.Core.Scenarios;
 using TelegramBotLib.Core.Services;
-using TelegramBotLib.DTO;
 using TelegramBotLib.Infrastructure.DataAccess;
 using static System.Console;
 
@@ -140,51 +139,84 @@ namespace TelegramBotLib.TelegramBot
                 string callbackId = callbackQuery.Id;
                 long chatId = callbackQuery.Message.Chat.Id;
 
-                var callbackDto = CallbackDto.FromString(callbackData); // TODO VS это наверное удалить, тк не используется.
-
                 // Обрабатываем нажатие в зависимости от callbackData
-                switch (callbackData)
+                var listName = callbackData.Split("|");
+                if (listName.Length > 1) // Получить конкретный список (категорию) для задач.
                 {
-                    case "show":
-                        // TODO VS 07062026 получить задачи по списку (категории) задач пользователя.
-                        //_toDoService.GetByUserIdAndList(toDoUser.UserId, GUID List, ct);
-                        var toDoListCallbackDto = ToDoListCallbackDto.FromString(callbackData);
-                        var toDoLists = _toDoListRepository.GetByUserId(toDoUser.UserId, ct);
-                        
-                        var tasks = await _toDoService.GetActiveByUserId(toDoUser.UserId, ct);
-                        if (!tasks.Any())
-                        {
-                            await botClient.SendMessage(chat, "Список задач пуст.", replyMarkup: _replyKeyboard, cancellationToken: ct);
+                    switch (listName[0])
+                    {
+                        case "show":
+                            await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct); // Чтобы кнопка не мерцала и другие кнопки реагировали.
+                            var allTasks = await _toDoService.GetByUserIdAndList(toDoUser.UserId, Guid.Parse(listName[1]), ct);
+                            // Вывести список задач.
+                            if (allTasks.Any())
+                            {
+                                await botClient.SendMessage(chat, "Cписок задач:", replyMarkup: _replyKeyboard, cancellationToken: ct);
+                                var taskNumber = 1;
+                                foreach (var taskForShow in allTasks)
+                                {
+                                    await botClient.SendMessage(
+                                        chat,
+                                        $"Задача: {taskNumber++}. {taskForShow.Name} - {taskForShow.CreatedAt} - '{taskForShow.Id}'",
+                                        replyMarkup: _replyKeyboard,
+                                        cancellationToken: ct);
+                                }
+                            }
+                            else
+                            {
+                                var list = await _toDoListService.Get(Guid.Parse(listName[1]), ct);
+                                await botClient.SendMessage(chat, $"Cписок задач {list?.Name} пустой.", replyMarkup: _replyKeyboard, cancellationToken: ct);
+                            }
                             break;
-                        }
-
-                        await botClient.SendMessage(chat, "Cписок задач:", replyMarkup: _replyKeyboard, cancellationToken: ct);
-                        var taskNumber = 1;
-                        foreach (var taskForShow in tasks)
-                        {
-                            await botClient.SendMessage(
-                                chat,
-                                $"Задача: {taskNumber++}. {taskForShow.Name} - {taskForShow.CreatedAt} - '{taskForShow.Id}'",
-                                replyMarkup: _replyKeyboard,
-                                cancellationToken: ct);
-                        }
-                        break;
-                    case "addlist":
-                        var newScenarioContext = new ScenarioContext(ScenarioType.AddList);
-                        newScenarioContext.UserId = toDoUser.TelegramUserId;
-                        var addListScenario = new AddListScenario(_userService, _toDoListService);
-                        _scenarios = _scenarios.Append(addListScenario).ToList();
-                        await ProcessScenario(newScenarioContext, update, ct);
-                        
-                        //await botClient.SendMessage(chatId, "Добавить список.");
-                        break;
-                    case "deletelist":
-                        await botClient.SendMessage(chatId, "Удалить список.");
-                        break;
-                    default:
-                        break;
+                    }
                 }
-                return;
+                else
+                {
+                    switch (listName[0])
+                    {
+                        case "show":
+                            await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct); // Чтобы кнопка не мерцала и другие кнопки реагировали.
+                            // Получить задачи без списка (категории) для задач.
+                            var tasks = await _toDoRepository.Find(toDoUser.UserId, x => x.List == null, ct);
+                            if (!tasks.Any())
+                            {
+                                await botClient.SendMessage(chat, "Список задач пуст.", replyMarkup: _replyKeyboard, cancellationToken: ct);
+                                break;
+                            }
+
+                            await botClient.SendMessage(chat, "Cписок задач:", replyMarkup: _replyKeyboard, cancellationToken: ct);
+                            var taskNumber = 1;
+                            foreach (var taskForShow in tasks)
+                            {
+                                await botClient.SendMessage(
+                                    chat,
+                                    $"Задача: {taskNumber++}. {taskForShow.Name} - {taskForShow.CreatedAt} - '{taskForShow.Id}'",
+                                    replyMarkup: _replyKeyboard,
+                                    cancellationToken: ct);
+                            }
+                            break;
+                        case "addlist":
+                            await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct); // Чтобы кнопка не мерцала и другие кнопки реагировали.
+                            var newScenarioContext = new ScenarioContext(ScenarioType.AddList);
+                            newScenarioContext.UserId = toDoUser.TelegramUserId;
+                            var addListScenario = new AddListScenario(_userService, _toDoListService);
+                            _scenarios = _scenarios.Append(addListScenario).ToList();
+                            await ProcessScenario(newScenarioContext, update, ct);
+                            break;
+                        case "deletelist":
+                            await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct); // Чтобы кнопка не мерцала и другие кнопки реагировали.
+                            //await botClient.SendMessage(chatId, "Удалить список.");
+                            var deleteListScenarioContext = new ScenarioContext(ScenarioType.DeleteList);
+                            deleteListScenarioContext.UserId = toDoUser.TelegramUserId;
+                            var deleteListScenario = new DeleteListScenario(_userService, _toDoListService, _toDoService);
+                            _scenarios = _scenarios.Append(deleteListScenario).ToList();
+                            await ProcessScenario(deleteListScenarioContext, update, ct);
+                            break;
+                        default:
+                            break;
+                    }
+                    await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct); // Чтобы кнопка не мерцала и другие кнопки реагировали.
+                }
             }
 
             #endregion
@@ -242,7 +274,7 @@ namespace TelegramBotLib.TelegramBot
 
                         var newScenarioContext = new ScenarioContext(ScenarioType.AddTask);
                         newScenarioContext.UserId = toDoUser.TelegramUserId;
-                        var taskScenario = new AddTaskScenario(_userService, _toDoService);
+                        var taskScenario = new AddTaskScenario(_userService, _toDoService, _toDoListService);
                         _scenarios = _scenarios.Append(taskScenario).ToList();
                         await ProcessScenario(newScenarioContext, update, ct);
 
@@ -257,21 +289,27 @@ namespace TelegramBotLib.TelegramBot
                         #region Inline-клавиатура.
 
                         // Создаем клавиатуру
-                        InlineKeyboardMarkup inlineKeyboard = new(
+                        InlineKeyboardButton withOutList = InlineKeyboardButton.WithCallbackData(
+                            text: "📌 Без списка",
+                            callbackData: "show");
+                        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(withOutList);
+                        // Добавить списки (категории) для задач, если есть в хранилище списков (категорий) для задач.
+                        var userLists = await _toDoListRepository.GetByUserId(toDoUser.UserId, ct);
+                        foreach (var list in userLists)
+                        {
+                            inlineKeyboard.AddNewRow(
+                                new[]
+                                {
+                                    InlineKeyboardButton.WithCallbackData(text: list.Name, callbackData: $"show|{list.Id}"),
+                                });
+                        }
+                        InlineKeyboardButton[] addDelete =
                             new[]
                             {
-                                // Первый ряд кнопок.
-                                new[]
-                                {
-                                    InlineKeyboardButton.WithCallbackData(text: "📌 Без списка", callbackData: ToDoListCallbackDto.FromString("show").Action),
-                                },
-                                // Второй ряд (например, одна кнопка на всю ширину)
-                                new[]
-                                {
-                                    InlineKeyboardButton.WithCallbackData(text: "🆕 Добавить", callbackData: "addlist"),
-                                    InlineKeyboardButton.WithCallbackData(text: "❌ Удалить", callbackData: "deletelist"),
-                                }
-                            });
+                                InlineKeyboardButton.WithCallbackData(text: "🆕 Добавить", callbackData: "addlist"),
+                                InlineKeyboardButton.WithCallbackData(text: "❌ Удалить", callbackData: "deletelist"),
+                            };
+                        inlineKeyboard.AddNewRow(addDelete);
 
                         // Отправляем сообщение с прикрепленной клавиатурой.
                         Message message1 = await botClient.SendMessage(
@@ -415,16 +453,16 @@ namespace TelegramBotLib.TelegramBot
             messageHelp.AppendLine("Список команд:");
             messageHelp.AppendLine($"{BotConstants.CommandStart} - Начать работать с ботом.");
             messageHelp.AppendLine($"{BotConstants.CommandHelp} - Вывести команды.");
-            messageHelp.AppendLine($"{BotConstants.CommandInfo} - Вывести информацию о Telegram боте.");
+            //messageHelp.AppendLine($"{BotConstants.CommandInfo} - Вывести информацию о Telegram боте.");
 
             if (toDoUser != null)
             {
                 messageHelp.AppendLine($"{BotConstants.CommandAddTask} - Добавить задчу.");
                 messageHelp.AppendLine($"{BotConstants.CommandShowTasks} - Вывести задачи в работе.");
                 messageHelp.AppendLine($"{BotConstants.CommandRemoveTask} - Удалить задачу.");
-                messageHelp.AppendLine($"{BotConstants.CommandCompleteTask} - Установить статус задачи на Завершена.");
+                //messageHelp.AppendLine($"{BotConstants.CommandCompleteTask} - Установить статус задачи на Завершена.");
                 messageHelp.AppendLine($"{BotConstants.CommandReport} - Вывести отчет по задачам.");
-                messageHelp.AppendLine($"{BotConstants.CommandFind} - Вывести задачи, которые начинаются на префикс.");
+                //messageHelp.AppendLine($"{BotConstants.CommandFind} - Вывести задачи, которые начинаются на префикс.");
                 messageHelp.AppendLine($"{BotConstants.CommandCancel} - Отменить сценарий.");
             }
 
@@ -515,6 +553,36 @@ namespace TelegramBotLib.TelegramBot
 
             return new ReplyKeyboardMarkup(buttons) { ResizeKeyboard = true };
         }
+
+        #region Клавиатуры для сценариев и не только.
+
+        /// <summary>
+        /// Создать клавиатуру по умолчанию.
+        /// </summary>
+        /// <returns>Клавиатура по умолчанию.</returns>
+        public static async Task<ReplyKeyboardMarkup> CreateKeyboardMarkupDefault()
+        {
+            var buttons = new List<KeyboardButton[]>();
+            buttons.Add(new KeyboardButton[] { new KeyboardButton("/start") });
+            buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandAddTask) });
+            buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandShowTasks) });
+            buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandReport) });
+
+            return new ReplyKeyboardMarkup(buttons) { ResizeKeyboard = true };
+        }
+
+        /// <summary>
+        /// Создать клавиатуру во время обработки сценариев.
+        /// </summary>
+        /// <returns>Клавиатура.</returns>
+        public static async Task<ReplyKeyboardMarkup> CreateKeyboardMarkupCancel()
+        {
+            var buttons = new List<KeyboardButton[]>();
+            buttons.Add(new KeyboardButton[] { new KeyboardButton(BotConstants.CommandCancel) });
+            return new ReplyKeyboardMarkup(buttons) { ResizeKeyboard = true };
+        }
+
+        #endregion
 
         /// <summary>
         /// Получить пользователя из объекта обновления.

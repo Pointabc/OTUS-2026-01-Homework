@@ -1,4 +1,5 @@
-﻿using TelegramBotLib.Core.DataAccess;
+﻿using Telegram.Bot.Types;
+using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Entities;
 using TelegramBotLib.Core.Exceptions;
 
@@ -44,6 +45,31 @@ namespace TelegramBotLib.Core.Services
             return toDoItem;
         }
 
+        public async Task<ToDoItem> Add(ToDoItem toDoItem, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(toDoItem.Name))
+                throw new ArgumentException($"Описание задачи не должно быть пустым.");
+
+            if (toDoItem.Name.Length > _maxTaskDiscriptionLength)
+                throw new TaskLengthLimitException(toDoItem.Name.Length, _maxTaskDiscriptionLength);
+
+            // Проверить на дубликаты.
+            if (await _toDoRepository.ExistsByName(toDoItem.User.UserId, toDoItem.Name, ct))
+                throw new DuplicateTaskException(toDoItem.Name);
+
+            // Проверить на максимальное кол-во задач.
+            _taskCount++;
+            if (_taskCount < 1 || _taskCount > _maxNumber)
+            {
+                _taskCount--;
+                throw new ArgumentException($"Можно создать задач: {_maxNumber}.");
+            }
+
+            await _toDoRepository.Add(toDoItem, ct);
+
+            return toDoItem;
+        }
+
         public async Task Delete(Guid id, CancellationToken cancellationToken)
         {
             await _toDoRepository.Delete(id, cancellationToken);
@@ -74,7 +100,8 @@ namespace TelegramBotLib.Core.Services
         public async Task<IReadOnlyList<ToDoItem>> GetByUserIdAndList(Guid userId, Guid? listId, CancellationToken ct)
         {
             var userLists = await _toDoListService.GetUserLists(userId, ct);
-            return await _toDoRepository.Find(userId, x => userLists.Contains(x.List), ct);
+            var userList = userLists.Where(x => x.Id == listId).FirstOrDefault();
+            return await _toDoRepository.Find(userId, x => x.List != null && userList.Id == x.List.Id, ct);
         }
     }
 }
