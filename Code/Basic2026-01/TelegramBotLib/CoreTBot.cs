@@ -55,6 +55,11 @@ namespace TelegramBotLib
                 if (!File.Exists(fileIndex))
                     using (File.Create(fileIndex)) { }
 
+                // Создать папку для хранения списков (категорий) для задач пользователей.
+                var listRepositoryFolder = BotConstants.FileListRepositoryFolderName;
+                if (!Directory.Exists(listRepositoryFolder))
+                    Directory.CreateDirectory(listRepositoryFolder);
+
                 #endregion
 
                 #region Создать инфраструктуру для сценариев.
@@ -83,6 +88,7 @@ namespace TelegramBotLib
                 var handler = new UpdateHandler(
                     toDoItemRepositoryFolder,
                     userRepositoryFolder,
+                    listRepositoryFolder,
                     toDoRepositoryIndex,
                     scenarios,
                     contextRepository,
@@ -97,15 +103,13 @@ namespace TelegramBotLib
                 {
                     new BotCommand { Command = "start", Description = "Начать работать с ботом." },
                     new BotCommand { Command = "help", Description = "Вывести команды." },
-                    new BotCommand { Command = "info", Description = "Вывести информацию о Telegram боте." },
+                    //new BotCommand { Command = "info", Description = "Вывести информацию о Telegram боте." },
                     new BotCommand { Command = "addtask", Description = "Добавить задчу." },
-                    new BotCommand { Command = "showtasks", Description = "Вывести задачи в работе." },
+                    new BotCommand { Command = "show", Description = "Вывести задачи в работе." },
                     //new BotCommand { Command = "removetask", Description = "Удалить задачу." },
                     //new BotCommand { Command = "completetask", Description = "Установить статус задачи на Завершена." },
-                    new BotCommand { Command = "showalltasks", Description = "Вывести все задачи." },
                     new BotCommand { Command = "report", Description = "Вывести отчет по задачам." },
                     //new BotCommand { Command = "find", Description = "Вывести задачи, которые начинаются на префикс." },
-                    //new BotCommand { Command = "exit", Description = "Выход." },
                 };
 
                 // Устанавливаем команды
@@ -116,7 +120,14 @@ namespace TelegramBotLib
                 // StartReceiving does not block the caller thread. Receiving is done on the ThreadPool.
                 ReceiverOptions receiveroptions = new()
                 {
-                    AllowedUpdates = Array.Empty<UpdateType>()    // receive all update types
+                    //AllowedUpdates = Array.Empty<UpdateType>()    // receive all update types
+                    AllowedUpdates = new UpdateType[]
+                    {
+                        UpdateType.Message,          // для обычных сообщений.
+                        UpdateType.CallbackQuery,    // для нажатий на кнопки.
+                        UpdateType.EditedMessage,    // для отредактированных сообщений.
+                        // ... добавьте другие типы, если они нужны
+                    }
                 };
 
                 botClient.StartReceiving(handler, receiveroptions, cancellationToken);

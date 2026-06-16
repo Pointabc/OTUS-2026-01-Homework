@@ -1,8 +1,10 @@
-﻿namespace TelegramBotLib.Core.Scenarios
+﻿using System.Collections.Concurrent;
+
+namespace TelegramBotLib.Core.Scenarios
 {
     internal class InMemoryScenarioContextRepository : IScenarioContextRepository
     {
-        Dictionary<long, ScenarioContext> _contextRepository = new Dictionary<long, ScenarioContext>();
+        ConcurrentDictionary<long, ScenarioContext> _contextRepository = new ConcurrentDictionary<long, ScenarioContext>();
         public async Task<ScenarioContext?> GetContext(long userId, CancellationToken ct)
         {
             ScenarioContext? scenario = null;
@@ -13,7 +15,8 @@
 
         public async Task ResetContext(long userId, CancellationToken ct)
         {
-            _contextRepository.Remove(userId);
+            ScenarioContext scenario = null;
+            _contextRepository.Remove(userId, out scenario);
         }
 
         public async Task SetContext(long userId, ScenarioContext context, CancellationToken ct)

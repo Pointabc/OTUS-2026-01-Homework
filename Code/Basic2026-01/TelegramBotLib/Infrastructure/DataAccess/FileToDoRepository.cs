@@ -164,16 +164,20 @@ namespace TelegramBotLib.Infrastructure.DataAccess
         }
 
         /// <summary>
-        /// Обновить задачу.
+        /// Обновить статус задачи.
         /// </summary>
         /// <param name="item">Задача.</param>
         /// <param name="cancellationToken">Токен отмены.</param>
-        /// <returns>Обновленная задача пользователя.</returns>
         public async Task Update(ToDoItem item, CancellationToken cancellationToken)
         {
-            var files = Directory.GetFiles(_toDoItemRepositoryFolder, "*.json");
+            // TODO VS Искать задачи только в папке пользователя, сейчас ищет во всех папках.
+            var files = Directory.GetFiles(_toDoItemRepositoryFolder, "*.json", SearchOption.AllDirectories);
+            var fileIndex = ((FileToDoRepositoryIndex)_toDoRepositoryIndex).GetFileIndexName();
             foreach (var file in files)
             {
+                if (file.EndsWith(fileIndex))
+                    continue;
+
                 string json = File.ReadAllText(file);
                 var toDoItem = JsonSerializer.Deserialize<ToDoItem>(json);
 

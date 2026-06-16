@@ -21,14 +21,23 @@ namespace TelegramBotLib.Core.Services
         Task<IReadOnlyList<ToDoItem>> GetActiveByUserId(Guid userId, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Добавить задачу.
+        /// Создать задачу.
         /// </summary>
         /// <param name="user">Пользователь.</param>
         /// <param name="name">Название задачи.</param>
         /// <param name="deadline">Крайний срок выполнения задачи.</param>
+        /// <param name="deadline">Список задачи.</param>
         /// <param name="cancellationToken">Токен отмены.</param>
-        /// <returns>Добавленная задача.</returns>
-        Task<ToDoItem> Add(ToDoUser user, string name, DateTime deadline, CancellationToken cancellationToken);
+        /// <returns>Задача.</returns>
+        Task<ToDoItem> Add(ToDoUser user, string name, DateTime deadline, ToDoList? list, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Создать задачу.
+        /// </summary>
+        /// <param name="toDoItem">Задача.</param>
+        /// <param name="ct">Токен отмены.</param>
+        /// <returns>Задача.</returns>
+        Task<ToDoItem> Add(ToDoItem toDoItem, CancellationToken ct);
 
         /// <summary>
         /// Установить статус задачи на завершено.
@@ -52,5 +61,14 @@ namespace TelegramBotLib.Core.Services
         /// <param name="cancellationToken">Токен отмены.</param>
         /// <returns>Задачи пользователя начинающиеся на префикс.</returns>
         Task<IReadOnlyList<ToDoItem>> Find(ToDoUser user, string namePrefix, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Получить задачи пользователя по списку (категории) для задач.
+        /// </summary>
+        /// <param name="userId">Гуид пользователя.</param>
+        /// <param name="listId">Гуид списка (категории) для задач.</param>
+        /// <param name="ct">Токен отмены.</param>
+        /// <returns>Задачи пользователя по списку (категории) для задач.</returns>
+        Task<IReadOnlyList<ToDoItem>> GetByUserIdAndList(Guid userId, Guid? listId, CancellationToken ct);
     }
 }

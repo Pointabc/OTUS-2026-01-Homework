@@ -16,7 +16,7 @@ namespace TelegramBotLib.Core.Scenarios
         /// </summary>
         /// <param name="scenario">Сессия/сценарий.</param>
         /// <returns>True - может, иначе нет.</returns>
-        bool CanHandle(ScenarioType scenario);
+        bool CanHandle(ScenarioType scenarioType);
 
         /// <summary>
         /// Обрабатывает входящее сообщение от пользователя в рамках текущего сценария. Включает основную бизнес-логику.
