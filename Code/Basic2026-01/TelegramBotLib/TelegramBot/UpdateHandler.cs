@@ -9,6 +9,7 @@ using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Entities;
 using TelegramBotLib.Core.Scenarios;
 using TelegramBotLib.Core.Services;
+using TelegramBotLib.DTO;
 using TelegramBotLib.Infrastructure.DataAccess;
 using static System.Console;
 
@@ -113,6 +114,7 @@ namespace TelegramBotLib.TelegramBot
 
         private async Task OnCallbackQuery(ITelegramBotClient botClient, Update update, CallbackQuery callbackQuery, CancellationToken ct)
         {
+            await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct); // Чтобы кнопка не мерцала и другие кнопки реагировали.
             // Добавить проверку на то, что пользователь зарегистрирован.
             var user = callbackQuery.From;
             var chat = callbackQuery.Message?.Chat;
@@ -135,87 +137,51 @@ namespace TelegramBotLib.TelegramBot
             if (update.Type == UpdateType.CallbackQuery)
             {
                 // Получаем ID чата и уникальный ID запроса (для ответа в Telegram)
-                string callbackData = callbackQuery.Data;
-                string callbackId = callbackQuery.Id;
-                long chatId = callbackQuery.Message.Chat.Id;
+                var callbackData = callbackQuery.Data;
+                var toDoListCallbackDto = ToDoListCallbackDto.FromString(callbackData);
 
                 // Обрабатываем нажатие в зависимости от callbackData
-                var listName = callbackData.Split("|");
-                if (listName.Length > 1) // Получить конкретный список (категорию) для задач.
+                switch (toDoListCallbackDto.Action)
                 {
-                    switch (listName[0])
-                    {
-                        case "show":
-                            await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct); // Чтобы кнопка не мерцала и другие кнопки реагировали.
-                            var allTasks = await _toDoService.GetByUserIdAndList(toDoUser.UserId, Guid.Parse(listName[1]), ct);
-                            // Вывести список задач.
-                            if (allTasks.Any())
-                            {
-                                await botClient.SendMessage(chat, "Cписок задач:", replyMarkup: _replyKeyboard, cancellationToken: ct);
-                                var taskNumber = 1;
-                                foreach (var taskForShow in allTasks)
-                                {
-                                    await botClient.SendMessage(
-                                        chat,
-                                        $"Задача: {taskNumber++}. {taskForShow.Name} - {taskForShow.CreatedAt} - '{taskForShow.Id}'",
-                                        replyMarkup: _replyKeyboard,
-                                        cancellationToken: ct);
-                                }
-                            }
-                            else
-                            {
-                                var list = await _toDoListService.Get(Guid.Parse(listName[1]), ct);
-                                await botClient.SendMessage(chat, $"Cписок задач {list?.Name} пустой.", replyMarkup: _replyKeyboard, cancellationToken: ct);
-                            }
-                            break;
-                    }
-                }
-                else
-                {
-                    switch (listName[0])
-                    {
-                        case "show":
-                            await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct); // Чтобы кнопка не мерцала и другие кнопки реагировали.
-                            // Получить задачи без списка (категории) для задач.
-                            var tasks = await _toDoRepository.Find(toDoUser.UserId, x => x.List == null, ct);
-                            if (!tasks.Any())
-                            {
-                                await botClient.SendMessage(chat, "Список задач пуст.", replyMarkup: _replyKeyboard, cancellationToken: ct);
-                                break;
-                            }
+                    case "show":
+                        // Получить задачи без списка (категории) для задач.
+                        var tasks = toDoListCallbackDto.ToDoListId != null
+                            ? await _toDoService.GetByUserIdAndList(toDoUser.UserId, toDoListCallbackDto.ToDoListId, ct)
+                            : await _toDoRepository.Find(toDoUser.UserId, x => x.List == null, ct);
 
-                            await botClient.SendMessage(chat, "Cписок задач:", replyMarkup: _replyKeyboard, cancellationToken: ct);
-                            var taskNumber = 1;
-                            foreach (var taskForShow in tasks)
-                            {
-                                await botClient.SendMessage(
-                                    chat,
-                                    $"Задача: {taskNumber++}. {taskForShow.Name} - {taskForShow.CreatedAt} - '{taskForShow.Id}'",
-                                    replyMarkup: _replyKeyboard,
-                                    cancellationToken: ct);
-                            }
+                        if (!tasks.Any())
+                        {
+                            await botClient.SendMessage(chat, "Список задач пуст.", replyMarkup: _replyKeyboard, cancellationToken: ct);
                             break;
-                        case "addlist":
-                            await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct); // Чтобы кнопка не мерцала и другие кнопки реагировали.
-                            var newScenarioContext = new ScenarioContext(ScenarioType.AddList);
-                            newScenarioContext.UserId = toDoUser.TelegramUserId;
-                            var addListScenario = new AddListScenario(_userService, _toDoListService);
-                            _scenarios = _scenarios.Append(addListScenario).ToList();
-                            await ProcessScenario(newScenarioContext, update, ct);
-                            break;
-                        case "deletelist":
-                            await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct); // Чтобы кнопка не мерцала и другие кнопки реагировали.
-                            //await botClient.SendMessage(chatId, "Удалить список.");
-                            var deleteListScenarioContext = new ScenarioContext(ScenarioType.DeleteList);
-                            deleteListScenarioContext.UserId = toDoUser.TelegramUserId;
-                            var deleteListScenario = new DeleteListScenario(_userService, _toDoListService, _toDoService);
-                            _scenarios = _scenarios.Append(deleteListScenario).ToList();
-                            await ProcessScenario(deleteListScenarioContext, update, ct);
-                            break;
-                        default:
-                            break;
-                    }
-                    await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct); // Чтобы кнопка не мерцала и другие кнопки реагировали.
+                        }
+
+                        await botClient.SendMessage(chat, "Cписок задач:", replyMarkup: _replyKeyboard, cancellationToken: ct);
+                        var taskNumber = 1;
+                        foreach (var taskForShow in tasks)
+                        {
+                            await botClient.SendMessage(
+                                chat,
+                                $"Задача: {taskNumber++}. {taskForShow.Name} - {taskForShow.CreatedAt} - '{taskForShow.Id}'",
+                                replyMarkup: _replyKeyboard,
+                                cancellationToken: ct);
+                        }
+                        break;
+                    case "addlist":
+                        var newScenarioContext = new ScenarioContext(ScenarioType.AddList);
+                        newScenarioContext.UserId = toDoUser.TelegramUserId;
+                        var addListScenario = new AddListScenario(_userService, _toDoListService);
+                        _scenarios = _scenarios.Append(addListScenario).ToList();
+                        await ProcessScenario(newScenarioContext, update, ct);
+                        break;
+                    case "deletelist":
+                        var deleteListScenarioContext = new ScenarioContext(ScenarioType.DeleteList);
+                        deleteListScenarioContext.UserId = toDoUser.TelegramUserId;
+                        var deleteListScenario = new DeleteListScenario(_userService, _toDoListService, _toDoService);
+                        _scenarios = _scenarios.Append(deleteListScenario).ToList();
+                        await ProcessScenario(deleteListScenarioContext, update, ct);
+                        break;
+                    default:
+                        break;
                 }
             }
 

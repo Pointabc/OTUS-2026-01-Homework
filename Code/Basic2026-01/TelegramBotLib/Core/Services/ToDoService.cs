@@ -103,5 +103,10 @@ namespace TelegramBotLib.Core.Services
             var userList = userLists.Where(x => x.Id == listId).FirstOrDefault();
             return await _toDoRepository.Find(userId, x => x.List != null && userList.Id == x.List.Id, ct);
         }
+
+        public async Task<ToDoItem?> Get(Guid toDoItemId, CancellationToken ct)
+        {
+            return await _toDoRepository.Get(toDoItemId, ct);
+        }
     }
 }
