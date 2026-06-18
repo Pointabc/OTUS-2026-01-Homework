@@ -119,7 +119,7 @@ namespace TelegramBotLib.TelegramBot
             var user = callbackQuery.From;
             var chat = callbackQuery.Message?.Chat;
             var toDoUser = await _userService.GetUser(user.Id, ct);
-            if (toDoUser == null)
+            if (toDoUser == null || chat == null)
                 return;
 
             // Также нужно проверять запущен ли для пользователя сценарий и вызывать ProcessScenario.
@@ -127,7 +127,6 @@ namespace TelegramBotLib.TelegramBot
             if (contextRepository != null)
             {
                 await ProcessScenario(contextRepository, update, ct);
-                // TODO VS возможно нужно return убрать.
                 return;
             }
 
@@ -136,9 +135,11 @@ namespace TelegramBotLib.TelegramBot
             // Проверяем, что событие — это нажатие на инлайн-кнопку
             if (update.Type == UpdateType.CallbackQuery)
             {
+                if (callbackQuery.Data == null)
+                    return;
+
                 // Получаем ID чата и уникальный ID запроса (для ответа в Telegram)
-                var callbackData = callbackQuery.Data;
-                var toDoListCallbackDto = ToDoListCallbackDto.FromString(callbackData);
+                var toDoListCallbackDto = ToDoListCallbackDto.FromString(callbackQuery.Data);
 
                 // Обрабатываем нажатие в зависимости от callbackData
                 switch (toDoListCallbackDto.Action)
@@ -192,17 +193,18 @@ namespace TelegramBotLib.TelegramBot
         {
             try
             {
-                // Only process text messages
-                if (message.Text is not { } messageText)
+                if (update == null || message == null)
                     return;
 
                 // Получить пользователя и чат.
-                var user = update.Message.From;
-                var chat = update.Message.Chat;
+                var user = update.Message?.From;
+                var chat = update.Message?.Chat;
+                if (user == null || chat == null)
+                    return;
 
                 var toDoUser = await _userService.GetUser(user.Id, ct);
                 // Получить команду и агрументы команды.
-                await GetUserCommandAndArgumentAsync(messageText, ct);
+                await GetUserCommandAndArgumentAsync(message.Text, ct);
 
                 var scenarioContext = await _contextRepository.GetContext(user.Id, ct);
                 if (scenarioContext != null && _userCommand != BotConstants.CommandCancel)
@@ -229,7 +231,7 @@ namespace TelegramBotLib.TelegramBot
                         var messageInfo = new StringBuilder();
                         messageInfo.AppendLine("Информация о программе.");
                         messageInfo.Append($"Версия бота 0.0.1. Дата создания {BotConstants.CreatedDate}");
-                        await botClient.SendMessage(update.Message.Chat, messageInfo.ToString(), replyMarkup: _replyKeyboard, cancellationToken: ct);
+                        await botClient.SendMessage(chat, messageInfo.ToString(), replyMarkup: _replyKeyboard, cancellationToken: ct);
                         break;
                     case BotConstants.CommandAddTask:
                         var isValidUser = await ValidateUserAsync(toDoUser, botClient, update, _replyKeyboard, ct);

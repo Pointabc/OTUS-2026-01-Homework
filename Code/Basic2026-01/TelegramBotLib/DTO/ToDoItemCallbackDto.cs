@@ -3,7 +3,7 @@ namespace TelegramBotLib.DTO
 {
     internal class ToDoItemCallbackDto : CallbackDto
     {
-        public Guid ToDoItemId { get; set; }
+        public Guid? ToDoItemId { get; set; }
 
         /// <summary>
         /// Создать объект ToDoItemCallbackDto.
@@ -14,8 +14,8 @@ namespace TelegramBotLib.DTO
         {
             var splitInput = input.Split('|');
             var toDoItemCallbackDto = new ToDoItemCallbackDto();
-            toDoItemCallbackDto.Action = splitInput.Length > 1 ? splitInput[0] : input;
-            toDoItemCallbackDto.ToDoItemId = splitInput.Length > 2 ? Guid.Parse(splitInput[1]) : Guid.Empty;
+            toDoItemCallbackDto.Action = splitInput.Length == 1 ? input : splitInput[0];
+            toDoItemCallbackDto.ToDoItemId = splitInput.Length > 1 ? Guid.Parse(splitInput[1]) : null;
 
             return toDoItemCallbackDto;
         }

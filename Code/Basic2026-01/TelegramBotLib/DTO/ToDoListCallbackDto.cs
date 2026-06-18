@@ -14,8 +14,8 @@ namespace TelegramBotLib.DTO
         {
             var splitInput = input.Split('|');
             var toDoListCallbackDto = new ToDoListCallbackDto();
-            toDoListCallbackDto.Action = splitInput.Length > 1 ? splitInput[0] : input;
-            toDoListCallbackDto.ToDoListId = splitInput.Length > 2 ? Guid.Parse(splitInput[1]) : null;
+            toDoListCallbackDto.Action = splitInput.Length == 1 ? input : splitInput[0];
+            toDoListCallbackDto.ToDoListId = splitInput.Length > 1 ? Guid.Parse(splitInput[1]) : null;
 
             return toDoListCallbackDto;
         }
