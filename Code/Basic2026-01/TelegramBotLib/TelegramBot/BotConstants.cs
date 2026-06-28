@@ -10,8 +10,6 @@
         public const string CommandExit = "/exit";
         public const string CommandAddTask = "/addtask";
         public const string CommandShowTasks = "/show";
-        public const string CommandRemoveTask = "/removetask";
-        public const string CommandCompleteTask = "/completetask";
         public const string CommandReport = "/report";
         public const string CommandFind = "/find";
         public const string CommandCancel = "/cancel";
