@@ -7,6 +7,7 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Entities;
+using TelegramBotLib.Core.Helpers;
 using TelegramBotLib.Core.Scenarios;
 using TelegramBotLib.Core.Services;
 using TelegramBotLib.DTO;
@@ -31,6 +32,8 @@ namespace TelegramBotLib.TelegramBot
         IEnumerable<IScenario> _scenarios;
         IScenarioContextRepository _contextRepository;
         ITelegramBotClient? _botClient = null;
+        static int _pageSize = 3;
+        int _currentPage = 0;
 
         public UpdateHandler(
             string pathToDoItemsRepository,
@@ -112,6 +115,80 @@ namespace TelegramBotLib.TelegramBot
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Создать разметку клавиатуры для страницы.
+        /// </summary>
+        /// <param name="callbackData">Общий набор кнопок. Ключ - имя кнопки, Значение - callbackData.</param>
+        /// <param name="listDto">????</param>
+        /// <returns>Разметка клавиатуры для страницы.</returns>
+        private async Task<InlineKeyboardMarkup> BuildPagedButtons(
+            IReadOnlyList<KeyValuePair<string, string>> callbackData,
+            PagedListCallbackDto pageListDto)
+        {
+            //Расчитать общее количество страниц.
+            var totalPages = (callbackData.Count + _pageSize - 1) / _pageSize; // Деление целых чисел с округлением вверх.
+            //Создать InlineKeyboardMarkup и добавить кнопки относящие только к конкретной странице с помощью 
+            var inlineKeyboardMarkup = new InlineKeyboardMarkup();
+
+            // Получить задачи из callbackData.
+            var tasks = new List<ToDoItem>();
+            for (var i = 0; i < callbackData.Count; ++i)
+            {
+                var toDoListId = ToDoListCallbackDto.FromString(callbackData[i].Value).ToDoListId;
+                var toDoItem = await _toDoRepository.Get((Guid)toDoListId, CancellationToken.None);
+                tasks.Add(toDoItem);
+            }
+
+            var tempCurrentPage = _currentPage;
+            var tasksInPage = tasks.GetBatchByNumber(_pageSize, pageListDto.Page)?.Cast<ToDoItem>();
+            // Добавить задачи.
+            foreach (var task in tasksInPage)
+            {
+                var activeTasksCallbackDto = ToDoListCallbackDto.FromString($"showtask|{task.Id}");
+                //allTasksKeyValuePair.Add(new KeyValuePair<string, string>(task.Name, activeTasksCallbackDto.ToString()));
+                inlineKeyboardMarkup.AddNewRow(
+                new[]
+                {
+                    InlineKeyboardButton.WithCallbackData(text: $"{task.Name}", callbackData: activeTasksCallbackDto.ToString()),
+                });
+            }
+
+            //Если listDto.Page > 0 то добавить кнопку ⬅️ с PagedListCallbackDto(listDto.Action, listDto.ToDoListId, page -1)
+            bool toLeftAdded = false;
+            if (pageListDto.Page > 0)
+            {
+                toLeftAdded = true;
+                //var pagedListCallbackDto = PagedListCallbackDto.FromString($"{pageListDto.Action}|{pageListDto.ToDoListId}|{pageListDto.Page - 1}");
+                var pagedListCallbackDto = PagedListCallbackDto.FromString($"{pageListDto.Action}|{pageListDto.ToDoListId}|{_currentPage - 1}");
+                inlineKeyboardMarkup.AddNewRow(
+                    new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData(text: "⬅️", callbackData: pagedListCallbackDto.ToString()),
+                    });
+            }
+
+            //Если listDto.Page < totalPages - 1 то добавить кнопку ➡️ с PagedListCallbackDto(listDto.Action, listDto.ToDoListId, page +1)
+            if (pageListDto.Page < totalPages - 1)
+            {
+                //var pagedListCallbackDto = PagedListCallbackDto.FromString($"{pageListDto.Action}|{pageListDto.ToDoListId}|{pageListDto.Page + 1}");
+                var pagedListCallbackDtoNext = PagedListCallbackDto.FromString($"{pageListDto.Action}|{pageListDto.ToDoListId}|{_currentPage + 1}");
+                if (toLeftAdded)
+                {
+                    inlineKeyboardMarkup.AddButton(InlineKeyboardButton.WithCallbackData(text: "➡️", callbackData: pagedListCallbackDtoNext.ToString()));
+                }
+                else
+                {
+                    inlineKeyboardMarkup.AddNewRow(
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData(text: "➡️", callbackData: pagedListCallbackDtoNext.ToString()),
+                        });
+                }
+            }
+
+            return inlineKeyboardMarkup;
+        }
+
         private async Task OnCallbackQuery(ITelegramBotClient botClient, Update update, CallbackQuery callbackQuery, CancellationToken ct)
         {
             await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct); // Чтобы кнопка не мерцала и другие кнопки реагировали.
@@ -135,18 +212,19 @@ namespace TelegramBotLib.TelegramBot
             if (callbackQuery.Data == null)
                 return;
 
+            //PagedListCallbackDto pagedListCallbackDto = new PagedListCallbackDto();
             var toDoListCallbackDto = ToDoListCallbackDto.FromString(callbackQuery.Data);
             // Обрабатываем нажатие в зависимости от callbackData
             switch (toDoListCallbackDto.Action)
             {
                 case "show":
+
                     // Получить задачи без списка (категории) для задач.
                     var tasks = toDoListCallbackDto.ToDoListId != null
                         ? await _toDoService.GetByUserIdAndList(toDoUser.UserId, toDoListCallbackDto.ToDoListId, ct)
                         : await _toDoRepository.Find(toDoUser.UserId, x => x.List == null, ct);
 
-                    // Добавить inline-кнопки для отображения активных задач.
-                    InlineKeyboardMarkup inlineKeyboardActiveTasks = new InlineKeyboardMarkup();
+                    //InlineKeyboardMarkup inlineKeyboardActiveTasks = new InlineKeyboardMarkup();
                     var activeTasks = tasks.Where(x => x.State == ToDoItemState.Active);
                     if (!activeTasks.Any())
                     {
@@ -162,15 +240,28 @@ namespace TelegramBotLib.TelegramBot
                         break;
                     }
 
+                    var allTasksKeyValuePair = new List<KeyValuePair<string, string>>();
                     foreach (var task in activeTasks)
                     {
                         var activeTasksCallbackDto = ToDoListCallbackDto.FromString($"showtask|{task.Id}");
-                        inlineKeyboardActiveTasks.AddNewRow(
-                            new[]
-                            {
-                                    InlineKeyboardButton.WithCallbackData(text: task.Name, callbackData: activeTasksCallbackDto.ToString()),
-                            });
+                        allTasksKeyValuePair.Add(new KeyValuePair<string, string>(task.Name, activeTasksCallbackDto.ToString()));
                     }
+
+                    // Добавить inline-кнопки для отображения активных задач.
+                    // Пробуем получить номер страницы. Если удается обновляем _currentPage.
+                    try
+                    {
+                        string[] data = callbackQuery.Data.Split("|");
+                        if (data.Length > 2)
+                            _currentPage = int.Parse(data[2]);
+                    }
+                    catch (Exception ex) { }
+
+                    PagedListCallbackDto pagedListCallbackDto = new PagedListCallbackDto();
+                    pagedListCallbackDto.Page = _currentPage;
+                    pagedListCallbackDto.Action = toDoListCallbackDto.Action;
+                    pagedListCallbackDto.ToDoListId = toDoListCallbackDto.ToDoListId;
+                    var inlineKeyboardActiveTasks = await BuildPagedButtons(allTasksKeyValuePair, pagedListCallbackDto);
                     // TODO VS 22062026 Добавить кнопки для пагинации и кнопку Активные задачи.
                     await botClient.SendMessage(chat, "Активные задачи", replyMarkup: inlineKeyboardActiveTasks, cancellationToken: ct);
                     break;
