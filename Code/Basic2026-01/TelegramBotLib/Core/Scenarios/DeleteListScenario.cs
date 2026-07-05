@@ -44,112 +44,108 @@ namespace TelegramBotLib.Core.Scenarios
             var scenarioResult = ScenarioResult.Transition;
             await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct); // Чтобы кнопка не мерцала и другие кнопки реагировали.
 
-            if (update.Type == UpdateType.CallbackQuery)
+            if (callbackQuery.Data == null)
+                return scenarioResult;
+
+            var toDoListCallbackDto = ToDoListCallbackDto.FromString(callbackQuery.Data);
+            var chat = UpdateHandler.GetChatFromUpdate(update);
+            var replyKeyboardDefault = await UpdateHandler.CreateKeyboardMarkupDefault();
+            var telegramUser = UpdateHandler.GetUserFromUpdate(update);
+            var toDoUser = await _userService.GetUser(telegramUser.Id, ct);
+            if (toDoUser == null)
+                return scenarioResult;
+
+            switch (toDoListCallbackDto.Action)
             {
-                if (callbackQuery.Data == null)
-                    return scenarioResult;
+                case "SelectList":
+                    if (toDoListCallbackDto.ToDoListId == null)
+                        break;
 
-                await botClient.AnswerCallbackQuery(callbackQuery.Id, cancellationToken: ct);
-                var toDoListCallbackDto = ToDoListCallbackDto.FromString(callbackQuery.Data);
-                var chat = UpdateHandler.GetChatFromUpdate(update);
-                var replyKeyboardDefault = await UpdateHandler.CreateKeyboardMarkupDefault();
-                var telegramUser = UpdateHandler.GetUserFromUpdate(update);
-                var toDoUser = await _userService.GetUser(telegramUser.Id, ct);
-                if (toDoUser == null)
-                    return scenarioResult;
+                    // Для хранения Guid списка (категории) для задач при подтверждении удаления.
+                    _listId = (Guid)toDoListCallbackDto.ToDoListId;
+                    // Получить список (категорию) для задач по Id.
+                    var list = await _toDoListService.Get((Guid)toDoListCallbackDto.ToDoListId, ct);
 
-                switch (toDoListCallbackDto.Action)
-                {
-                    case "SelectList":
-                        if (toDoListCallbackDto.ToDoListId == null)
-                            break;
+                    #region Inline-клавиатура.
 
-                        // Для хранения Guid списка (категории) для задач при подтверждении удаления.
-                        _listId = (Guid)toDoListCallbackDto.ToDoListId;
-                        // Получить список (категорию) для задач по Id.
-                        var list = await _toDoListService.Get((Guid)toDoListCallbackDto.ToDoListId, ct);
-
-                        #region Inline-клавиатура.
-
-                        // Создаем клавиатуру
-                        InlineKeyboardMarkup inlineKeyboardDeleteApprove = new(
+                    // Создаем клавиатуру
+                    InlineKeyboardMarkup inlineKeyboardDeleteApprove = new(
+                        new[]
+                        {
+                            // Первый ряд кнопок.
                             new[]
                             {
-                                        // Первый ряд кнопок.
-                                        new[]
-                                        {
-                                            InlineKeyboardButton.WithCallbackData(text: "✅Да", callbackData: "yes"),
-                                            InlineKeyboardButton.WithCallbackData(text: "❌Нет", callbackData: "no"),
-                                        },
-                            });
+                                InlineKeyboardButton.WithCallbackData(text: "✅Да", callbackData: "yes"),
+                                InlineKeyboardButton.WithCallbackData(text: "❌Нет", callbackData: "no"),
+                            },
+                        });
 
-                        #endregion
+                    #endregion
 
-                        // Отправляем сообщение с прикрепленной клавиатурой.
-                        Message message1 = await botClient.SendMessage(
-                            chat,
-                            text: $"Подтверждаете удаление списка {list?.Name} и всех его задач",
-                            replyMarkup: inlineKeyboardDeleteApprove,
-                            cancellationToken: ct
-                        );
+                    // Отправляем сообщение с прикрепленной клавиатурой.
+                    Message message1 = await botClient.SendMessage(
+                        chat,
+                        text: $"Подтверждаете удаление списка {list?.Name} и всех его задач",
+                        replyMarkup: inlineKeyboardDeleteApprove,
+                        cancellationToken: ct
+                    );
 
-                        context.CurrentStep = "Delete";
-                        scenarioResult = ScenarioResult.Transition;
+                    context.CurrentStep = "Delete";
+                    scenarioResult = ScenarioResult.Transition;
 
-                        return scenarioResult;
-                    case "deletelist":
-                        // Создать inline-кнопки для выбора списка (категории) для задачи.
-                        InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
-                        // Получить списки (категории) для задач, если есть в хранилище списков (категорий) для задач.
-                        var userLists = await _toDoListService.GetUserLists(toDoUser.UserId, ct);
-                        foreach (var userList in userLists)
-                        {
-                            inlineKeyboard.AddNewRow(
-                                new[]
-                                {
+                    return scenarioResult;
+                case "deletelist":
+                    // Создать inline-кнопки для выбора списка (категории) для задачи.
+                    InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
+                    // Получить списки (категории) для задач, если есть в хранилище списков (категорий) для задач.
+                    var userLists = await _toDoListService.GetUserLists(toDoUser.UserId, ct);
+                    foreach (var userList in userLists)
+                    {
+                        inlineKeyboard.AddNewRow(
+                            new[]
+                            {
                                         InlineKeyboardButton.WithCallbackData(text: userList.Name, callbackData: $"SelectList|{userList.Id}"),
-                                });
-                        }
+                            });
+                    }
 
-                        // Отправляем сообщение с прикрепленной клавиатурой.
-                        Message message = await botClient.SendMessage(
-                            chat,
-                            text: "Выберите список для удачения",
-                            replyMarkup: inlineKeyboard,
-                            cancellationToken: ct
-                        );
+                    // Отправляем сообщение с прикрепленной клавиатурой.
+                    Message message = await botClient.SendMessage(
+                        chat,
+                        text: "Выберите список для удачения",
+                        replyMarkup: inlineKeyboard,
+                        cancellationToken: ct
+                    );
 
-                        context.CurrentStep = "Delete";
-                        scenarioResult = ScenarioResult.Transition;
-                        break;
-                    case "yes":
-                        scenarioResult = ScenarioResult.Completed;
-                        // Удалить задачи в списке (категории) для задач.
-                        var tasks = await _toDoService.GetByUserIdAndList(toDoUser.UserId, toDoListCallbackDto.ToDoListId, ct);
+                    context.CurrentStep = "Delete";
+                    scenarioResult = ScenarioResult.Transition;
+                    break;
+                case "yes":
+                    scenarioResult = ScenarioResult.Completed;
+                    // Удалить задачи в списке (категории) для задач.
+                    var tasks = await _toDoService.GetByUserIdAndList(toDoUser.UserId, toDoListCallbackDto.ToDoListId, ct);
 
-                        foreach (var task in tasks)
-                            await _toDoService.Delete(task.Id, ct);
+                    foreach (var task in tasks)
+                        await _toDoService.Delete(task.Id, ct);
 
-                        await _toDoListService.Delete(_listId, ct);
-                        await botClient.SendMessage(
-                            chat,
-                            "Список (категория) для задач успешно удален.",
-                            replyMarkup: replyKeyboardDefault,
-                            cancellationToken: ct);
-                        break;
-                    case "no":
-                        scenarioResult = ScenarioResult.Completed;
-                        context.CurrentStep = "Сценарий завершен.";
+                    await _toDoListService.Delete(_listId, ct);
+                    await botClient.SendMessage(
+                        chat,
+                        "Список (категория) для задач успешно удален.",
+                        replyMarkup: replyKeyboardDefault,
+                        cancellationToken: ct);
+                    break;
+                case "no":
+                    scenarioResult = ScenarioResult.Completed;
+                    context.CurrentStep = "Сценарий завершен.";
 
-                        await botClient.SendMessage(
-                            chat,
-                            "Удаление списка (категории) для задач отменено.",
-                            replyMarkup: replyKeyboardDefault,
-                            cancellationToken: ct);
-                        break;
-                    default:
-                        break;
-                }
+                    await botClient.SendMessage(
+                        chat,
+                        "Удаление списка (категории) для задач отменено.",
+                        replyMarkup: replyKeyboardDefault,
+                        cancellationToken: ct);
+                    break;
+                default:
+                    break;
             }
 
             return scenarioResult;

@@ -1,6 +1,4 @@
-﻿
-using System.Collections;
-using TelegramBotLib.Core.Entities;
+﻿using System.Collections;
 
 namespace TelegramBotLib.Core.Helpers
 {

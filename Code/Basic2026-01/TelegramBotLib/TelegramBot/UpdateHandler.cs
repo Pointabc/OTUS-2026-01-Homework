@@ -300,7 +300,7 @@ namespace TelegramBotLib.TelegramBot
                 case "showtask":
                     InlineKeyboardMarkup inlineKeyboardCompliteDeleteTasks = new InlineKeyboardMarkup();
                     var completeCallbackDto = ToDoListCallbackDto.FromString($"completetask|{toDoListCallbackDto.ToDoListId}");
-                    var deleteCallbackDto = ToDoListCallbackDto.FromString($"deletetasktask|{toDoListCallbackDto.ToDoListId}");
+                    var deleteCallbackDto = ToDoListCallbackDto.FromString($"deletetask|{toDoListCallbackDto.ToDoListId}");
                     inlineKeyboardCompliteDeleteTasks.AddNewRow(
                             new[]
                             {
@@ -315,20 +315,24 @@ namespace TelegramBotLib.TelegramBot
                     var completedTaskSelected = await _toDoRepository.Get((Guid)toDoListCallbackDto.ToDoListId, ct);
                     await botClient.SendMessage(
                         chat,
-                        $"Задача {completedTaskSelected?.Name}:\n Срок выполнения: {completedTaskSelected?.Deadline}\n Время создания: {completedTaskSelected?.CreatedAt}\n Время выполнения: {completedTaskSelected.StateChangedAt}",
+                        $"Задача {completedTaskSelected?.Name}:\nСрок выполнения: {completedTaskSelected?.Deadline}\nВремя создания: {completedTaskSelected?.CreatedAt}\nВремя выполнения: {completedTaskSelected?.StateChangedAt}",
                         replyMarkup: _replyKeyboard,
                         cancellationToken: ct);
                     break;
                 case "completetask":
                     var taskForComplete = await _toDoRepository.Get((Guid)toDoListCallbackDto.ToDoListId, ct);
                     await _toDoRepository.Update(taskForComplete, ct);
-                    await botClient.SendMessage(chat, $"Задача {taskForComplete?.Name} выполнена.", replyMarkup: _replyKeyboard, cancellationToken: ct);
+                    await botClient.SendMessage(
+                        chat,
+                        $"Задача {taskForComplete?.Name}:\nСрок выполнения: {taskForComplete?.Deadline}\nВремя создания: {taskForComplete?.CreatedAt}\nЗадача выполнена.",
+                        replyMarkup: _replyKeyboard,
+                        cancellationToken: ct);
                     break;
-                case "deletetasktask":
-                    var taskForDelete = await _toDoRepository.Get((Guid)toDoListCallbackDto.ToDoListId, ct);
-                    var taskName = taskForDelete?.Name;
-                    await _toDoRepository.Delete((Guid)toDoListCallbackDto.ToDoListId, ct);
-                    await botClient.SendMessage(chat, $"Задача {taskName} удалена.", replyMarkup: _replyKeyboard, cancellationToken: ct);
+                case "deletetask":
+                    var deleteTaskScenarioContext = new ScenarioContext(ScenarioType.DeleteTask);
+                    var deleteTaskScenario = new DeleteTaskScenario(_toDoService);
+                    _scenarios = _scenarios.Append(deleteTaskScenario).ToList();
+                    await ProcessScenario(deleteTaskScenarioContext, update, ct);
                     break;
                 case "addlist":
                     var newScenarioContext = new ScenarioContext(ScenarioType.AddList);
@@ -526,7 +530,6 @@ namespace TelegramBotLib.TelegramBot
             messageHelp.AppendLine("Список команд:");
             messageHelp.AppendLine($"{BotConstants.CommandStart} - Начать работать с ботом.");
             messageHelp.AppendLine($"{BotConstants.CommandHelp} - Вывести команды.");
-            //messageHelp.AppendLine($"{BotConstants.CommandInfo} - Вывести информацию о Telegram боте.");
 
             if (toDoUser != null)
             {
