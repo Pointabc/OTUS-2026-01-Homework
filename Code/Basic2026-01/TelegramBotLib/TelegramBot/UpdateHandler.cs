@@ -144,8 +144,11 @@ namespace TelegramBotLib.TelegramBot
             // Добавить задачи.
             foreach (var task in tasksInPage)
             {
-                var activeTasksCallbackDto = ToDoListCallbackDto.FromString($"showtask|{task.Id}");
-                //allTasksKeyValuePair.Add(new KeyValuePair<string, string>(task.Name, activeTasksCallbackDto.ToString()));
+                //var activeTasksCallbackDto = ToDoListCallbackDto.FromString($"showtask|{task.Id}");
+                var activeTasksCallbackDto = pageListDto.Action == "show"
+                    ? ToDoListCallbackDto.FromString($"showtask|{task.Id}")
+                    : ToDoListCallbackDto.FromString($"showcompletedtaskinfo|{task.Id}");
+
                 inlineKeyboardMarkup.AddNewRow(
                 new[]
                 {
@@ -170,7 +173,6 @@ namespace TelegramBotLib.TelegramBot
             //Если listDto.Page < totalPages - 1 то добавить кнопку ➡️ с PagedListCallbackDto(listDto.Action, listDto.ToDoListId, page +1)
             if (pageListDto.Page < totalPages - 1)
             {
-                //var pagedListCallbackDto = PagedListCallbackDto.FromString($"{pageListDto.Action}|{pageListDto.ToDoListId}|{pageListDto.Page + 1}");
                 var pagedListCallbackDtoNext = PagedListCallbackDto.FromString($"{pageListDto.Action}|{pageListDto.ToDoListId}|{_currentPage + 1}");
                 if (toLeftAdded)
                 {
@@ -186,7 +188,80 @@ namespace TelegramBotLib.TelegramBot
                 }
             }
 
+            if (pageListDto.Action == "show")
+            {
+                // Добавить кнопку Посмотреть выполненные.
+                var pagedListActiveCallbackDtoNext = PagedListCallbackDto.FromString($"show_completed|{pageListDto.ToDoListId}|0");
+                inlineKeyboardMarkup.AddNewRow(
+                    new[]
+                    {
+                    InlineKeyboardButton.WithCallbackData(text: "☑️Посмотреть выполненные", callbackData: pagedListActiveCallbackDtoNext.ToString()),
+                    });
+            }
+
             return inlineKeyboardMarkup;
+        }
+
+        /// <summary>
+        /// Отобразить задачи в зависимости от статуса задачи (в работе/выполнена).
+        /// </summary>
+        /// <param name="botClient">Бот клиент.</param>
+        /// <param name="callbackQuery">Информация о действии пользователя.</param>
+        /// <param name="needActiveTasks">True - отобразить активные, иначе завершенные задачи.</param>
+        /// <param name="ct">Токен отмены.</param>
+        private async Task ShowTasks(ITelegramBotClient botClient, CallbackQuery callbackQuery, bool needActiveTasks, CancellationToken ct)
+        {
+            var user = callbackQuery.From;
+            var chat = callbackQuery.Message?.Chat;
+            var toDoUser = await _userService.GetUser(user.Id, ct);
+            if (toDoUser == null || chat == null || callbackQuery == null)
+                return;
+
+            var toDoListCallbackDto = ToDoListCallbackDto.FromString(callbackQuery.Data);
+            // Получить задачи без списка (категории) для задач.
+            var tasks = toDoListCallbackDto.ToDoListId != null
+                ? await _toDoService.GetByUserIdAndList(toDoUser.UserId, toDoListCallbackDto.ToDoListId, ct)
+                : await _toDoRepository.Find(toDoUser.UserId, x => x.List == null, ct);
+
+            var activeTasks = needActiveTasks 
+                ? tasks.Where(x => x.State == ToDoItemState.Active)
+                : tasks.Where(x => x.State == ToDoItemState.Completed);
+
+            if (!activeTasks.Any() && !needActiveTasks)
+            {
+                await botClient.SendMessage(chat, "Список задач пуст.", replyMarkup: _replyKeyboard, cancellationToken: ct);
+                return;
+            }
+
+            var allTasksKeyValuePair = new List<KeyValuePair<string, string>>();
+            foreach (var task in activeTasks)
+            {
+                var activeTasksCallbackDto = needActiveTasks
+                    ? ToDoListCallbackDto.FromString($"showtask|{task.Id}")
+                    : ToDoListCallbackDto.FromString($"show_completed|{task.Id}");
+                allTasksKeyValuePair.Add(new KeyValuePair<string, string>(task.Name, activeTasksCallbackDto.ToString()));
+            }
+
+            // Добавить inline-кнопки для отображения активных задач.
+            // Пробуем получить номер страницы. Если удается обновляем _currentPage.
+            try
+            {
+                string[] data = callbackQuery.Data.Split("|");
+                if (data.Length > 2)
+                    _currentPage = int.Parse(data[2]);
+            }
+            catch (Exception ex) { }
+
+            PagedListCallbackDto pagedListCallbackDto = new PagedListCallbackDto
+            {
+                Page = _currentPage,
+                Action = toDoListCallbackDto.Action,
+                ToDoListId = toDoListCallbackDto.ToDoListId
+            };
+
+            var inlineKeyboardActiveTasks = await BuildPagedButtons(allTasksKeyValuePair, pagedListCallbackDto);
+            var title = needActiveTasks ? "Задачи в работе" : "Выполненные задачи";
+            await botClient.SendMessage(chat, title, replyMarkup: inlineKeyboardActiveTasks, cancellationToken: ct);
         }
 
         private async Task OnCallbackQuery(ITelegramBotClient botClient, Update update, CallbackQuery callbackQuery, CancellationToken ct)
@@ -212,58 +287,15 @@ namespace TelegramBotLib.TelegramBot
             if (callbackQuery.Data == null)
                 return;
 
-            //PagedListCallbackDto pagedListCallbackDto = new PagedListCallbackDto();
             var toDoListCallbackDto = ToDoListCallbackDto.FromString(callbackQuery.Data);
             // Обрабатываем нажатие в зависимости от callbackData
             switch (toDoListCallbackDto.Action)
             {
                 case "show":
-
-                    // Получить задачи без списка (категории) для задач.
-                    var tasks = toDoListCallbackDto.ToDoListId != null
-                        ? await _toDoService.GetByUserIdAndList(toDoUser.UserId, toDoListCallbackDto.ToDoListId, ct)
-                        : await _toDoRepository.Find(toDoUser.UserId, x => x.List == null, ct);
-
-                    //InlineKeyboardMarkup inlineKeyboardActiveTasks = new InlineKeyboardMarkup();
-                    var activeTasks = tasks.Where(x => x.State == ToDoItemState.Active);
-                    if (!activeTasks.Any())
-                    {
-                        /*inlineKeyboardActiveTasks.AddNewRow(
-                            new[]
-                            {
-                                InlineKeyboardButton.WithCallbackData(
-                                    text: "☑️Посмотреть выполненные",
-                                    callbackData: "PagedListCallbackDto(\"show_completed\", ToDoListId, 0)"),
-                            });*/
-
-                        await botClient.SendMessage(chat, "Список задач пуст.", replyMarkup: _replyKeyboard, cancellationToken: ct);
-                        break;
-                    }
-
-                    var allTasksKeyValuePair = new List<KeyValuePair<string, string>>();
-                    foreach (var task in activeTasks)
-                    {
-                        var activeTasksCallbackDto = ToDoListCallbackDto.FromString($"showtask|{task.Id}");
-                        allTasksKeyValuePair.Add(new KeyValuePair<string, string>(task.Name, activeTasksCallbackDto.ToString()));
-                    }
-
-                    // Добавить inline-кнопки для отображения активных задач.
-                    // Пробуем получить номер страницы. Если удается обновляем _currentPage.
-                    try
-                    {
-                        string[] data = callbackQuery.Data.Split("|");
-                        if (data.Length > 2)
-                            _currentPage = int.Parse(data[2]);
-                    }
-                    catch (Exception ex) { }
-
-                    PagedListCallbackDto pagedListCallbackDto = new PagedListCallbackDto();
-                    pagedListCallbackDto.Page = _currentPage;
-                    pagedListCallbackDto.Action = toDoListCallbackDto.Action;
-                    pagedListCallbackDto.ToDoListId = toDoListCallbackDto.ToDoListId;
-                    var inlineKeyboardActiveTasks = await BuildPagedButtons(allTasksKeyValuePair, pagedListCallbackDto);
-                    // TODO VS 22062026 Добавить кнопки для пагинации и кнопку Активные задачи.
-                    await botClient.SendMessage(chat, "Активные задачи", replyMarkup: inlineKeyboardActiveTasks, cancellationToken: ct);
+                    await ShowTasks(botClient, callbackQuery, true, ct);
+                    break;
+                case "show_completed":
+                    await ShowTasks(botClient, callbackQuery, false, ct);
                     break;
                 case "showtask":
                     InlineKeyboardMarkup inlineKeyboardCompliteDeleteTasks = new InlineKeyboardMarkup();
@@ -278,6 +310,14 @@ namespace TelegramBotLib.TelegramBot
 
                     var taskSelected = await _toDoRepository.Get((Guid)toDoListCallbackDto.ToDoListId, ct);
                     await botClient.SendMessage(chat, $"Задача {taskSelected?.Name}:", replyMarkup: inlineKeyboardCompliteDeleteTasks, cancellationToken: ct);
+                    break;
+                case "showcompletedtaskinfo":
+                    var completedTaskSelected = await _toDoRepository.Get((Guid)toDoListCallbackDto.ToDoListId, ct);
+                    await botClient.SendMessage(
+                        chat,
+                        $"Задача {completedTaskSelected?.Name}:\n Срок выполнения: {completedTaskSelected?.Deadline}\n Время создания: {completedTaskSelected?.CreatedAt}\n Время выполнения: {completedTaskSelected.StateChangedAt}",
+                        replyMarkup: _replyKeyboard,
+                        cancellationToken: ct);
                     break;
                 case "completetask":
                     var taskForComplete = await _toDoRepository.Get((Guid)toDoListCallbackDto.ToDoListId, ct);

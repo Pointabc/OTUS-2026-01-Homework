@@ -60,12 +60,15 @@ namespace TelegramBotLib.Core.Scenarios
                 switch (toDoItemCallbackDto.Action)
                 {
                     case "SelectList":
-                        if (toDoItemCallbackDto.ToDoItemId == null)
-                            return scenarioResult;
+                        //if (toDoItemCallbackDto.ToDoItemId == null)
+                            //return scenarioResult;
 
                         var chat = UpdateHandler.GetChatFromUpdate(update);
                         // Тут получить список (категорию) для задач по Id и добавить в создаваемую задачу.
-                        var list = await _toDoListService.Get((Guid)toDoItemCallbackDto.ToDoItemId, ct);
+                        var list = toDoItemCallbackDto.ToDoItemId != null
+                            ? await _toDoListService.Get((Guid)toDoItemCallbackDto.ToDoItemId, ct)
+                            : null;
+
                         _toDoItem.List = list;
 
                         var task = await _toDoService.Add(_toDoItem, ct);
@@ -156,7 +159,7 @@ namespace TelegramBotLib.Core.Scenarios
                     // Создать inline-кнопки для выбора списка (категории) для задачи.
                     InlineKeyboardButton withOutList = InlineKeyboardButton.WithCallbackData(
                             text: "📌 Без списка",
-                            callbackData: $"SelectList|WithoutList");
+                            callbackData: $"SelectList|{string.Empty}");
                     InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(withOutList);
                     // Добавить списки (категории) для задач, если есть в хранилище списков (категорий) для задач.
                     var userLists = await _toDoListService.GetUserLists(toDoUser.UserId, ct);
