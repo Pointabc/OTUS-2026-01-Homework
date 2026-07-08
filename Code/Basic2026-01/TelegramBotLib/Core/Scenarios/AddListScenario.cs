@@ -28,6 +28,9 @@ namespace TelegramBotLib.Core.Scenarios
             var chat = UpdateHandler.GetChatFromUpdate(update);
             var telegramUser = UpdateHandler.GetUserFromUpdate(update);
             var toDoUser = await _userService.GetUser(telegramUser.Id, ct);
+            if (toDoUser == null)
+                return scenarioResult;
+
             var userFromUpdate = UpdateHandler.GetUserFromUpdate(update);
             var currentStep = context.CurrentStep;
             ReplyKeyboardMarkup _replyKeyboard = await UpdateHandler.CreateKeyboardMarkupCancel();
@@ -37,7 +40,7 @@ namespace TelegramBotLib.Core.Scenarios
             switch (currentStep)
             {
                 case null:
-                    context.Data.Add(toDoUser.TelegramUserId.ToString(), toDoUser); // TODO VS Какой должен быть ключ? Возможно ключ toDoUser.UserId. Хранить toDoUser.
+                    context.Data.Add(toDoUser.TelegramUserId.ToString(), toDoUser);
                     await botClient.SendMessage(chat, "Введите название списка:", replyMarkup: _replyKeyboard, cancellationToken: ct);
                     context.CurrentStep = "Name";
                     break;

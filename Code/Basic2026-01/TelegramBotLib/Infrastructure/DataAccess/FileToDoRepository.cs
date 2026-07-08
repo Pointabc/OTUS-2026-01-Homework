@@ -126,9 +126,12 @@ namespace TelegramBotLib.Infrastructure.DataAccess
         /// <returns>Задача, иначе null.</returns>
         public async Task<ToDoItem?> Get(Guid id, CancellationToken cancellationToken)
         {
-            var files = Directory.GetFiles(_toDoItemRepositoryFolder, "*.json");
+            var files = Directory.GetFiles(_toDoItemRepositoryFolder, "*.json", SearchOption.AllDirectories);
             foreach (var file in files)
             {
+                if (file.EndsWith("fileIndex.json"))
+                    continue;
+
                 string json = File.ReadAllText(file);
                 var toDoItem = JsonSerializer.Deserialize<ToDoItem>(json);
 
@@ -164,7 +167,7 @@ namespace TelegramBotLib.Infrastructure.DataAccess
         }
 
         /// <summary>
-        /// Обновить статус задачи.
+        /// Обновить статус задачи (Задача выполнена).
         /// </summary>
         /// <param name="item">Задача.</param>
         /// <param name="cancellationToken">Токен отмены.</param>

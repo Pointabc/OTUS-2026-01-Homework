@@ -65,10 +65,18 @@ namespace TelegramBotLib.Core.Services
         /// <summary>
         /// Получить задачи пользователя по списку (категории) для задач.
         /// </summary>
-        /// <param name="userId">Гуид пользователя.</param>
-        /// <param name="listId">Гуид списка (категории) для задач.</param>
+        /// <param name="userId">Guid пользователя.</param>
+        /// <param name="listId">Guid списка (категории) для задач.</param>
         /// <param name="ct">Токен отмены.</param>
         /// <returns>Задачи пользователя по списку (категории) для задач.</returns>
         Task<IReadOnlyList<ToDoItem>> GetByUserIdAndList(Guid userId, Guid? listId, CancellationToken ct);
+
+        /// <summary>
+        /// Получить задачу.
+        /// </summary>
+        /// <param name="toDoItemId">Guid задачи.</param>
+        /// <param name="ct"></param>
+        /// <returns>Задача.</returns>
+        Task<ToDoItem?> Get(Guid toDoItemId, CancellationToken ct);
     }
 }

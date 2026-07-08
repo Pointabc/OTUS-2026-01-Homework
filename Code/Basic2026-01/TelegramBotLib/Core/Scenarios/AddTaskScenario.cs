@@ -5,6 +5,7 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBotLib.Core.Entities;
 using TelegramBotLib.Core.Services;
+using TelegramBotLib.DTO;
 using TelegramBotLib.TelegramBot;
 
 namespace TelegramBotLib.Core.Scenarios
@@ -51,46 +52,43 @@ namespace TelegramBotLib.Core.Scenarios
 
             if (update.Type == UpdateType.CallbackQuery)
             {
-                // Получаем ID чата и уникальный ID запроса (для ответа в Telegram)
-                string callbackData = callbackQuery.Data;
-                string callbackId = callbackQuery.Id;
-                long chatId = callbackQuery.Message.Chat.Id;
+                if (callbackQuery.Data == null)
+                    return scenarioResult;
 
-                var listName = callbackData.Split("|");
-                if (listName.Length > 1)
+                var toDoItemCallbackDto = ToDoItemCallbackDto.FromString(callbackQuery.Data);
+
+                switch (toDoItemCallbackDto.Action)
                 {
-                    switch (listName[0])
-                    {
-                        case "SelectList":
-                            var chat = UpdateHandler.GetChatFromUpdate(update);
-                            // Тут получить список (категорию) для задач по Id и добавить в создаваемую задачу.
-                            Guid guid = Guid.Empty;
-                            Guid.TryParse(listName[1], out guid);
-                            if (guid != Guid.Empty)
-                            {
-                                var list = await _toDoListService.Get(guid, ct);
-                                _toDoItem.List = list;
-                            }
-                            
-                            var task = await _toDoService.Add(_toDoItem, ct);
-                            if (task == null)
-                            {
-                                await botClient.SendMessage(
-                                    chat,
-                                    $"Нужно добавить описание задачи: {BotConstants.CommandAddTask} [Описание задачи] или создано слишком много задач.",
-                                    cancellationToken: ct);
-                                break;
-                            }
+                    case "SelectList":
+                        //if (toDoItemCallbackDto.ToDoItemId == null)
+                            //return scenarioResult;
 
-                            context.CurrentStep = "Сценарий завершен.";
-                            scenarioResult = ScenarioResult.Completed;
-                            ReplyKeyboardMarkup _replyKeyboardDefault = await UpdateHandler.CreateKeyboardMarkupDefault();
-                            await botClient.SendMessage(chat, "Задача добавлена.", replyMarkup: _replyKeyboardDefault, cancellationToken: ct);
+                        var chat = UpdateHandler.GetChatFromUpdate(update);
+                        // Тут получить список (категорию) для задач по Id и добавить в создаваемую задачу.
+                        var list = toDoItemCallbackDto.ToDoItemId != null
+                            ? await _toDoListService.Get((Guid)toDoItemCallbackDto.ToDoItemId, ct)
+                            : null;
 
-                            return ScenarioResult.Completed;
-                        default:
+                        _toDoItem.List = list;
+
+                        var task = await _toDoService.Add(_toDoItem, ct);
+                        if (task == null)
+                        {
+                            await botClient.SendMessage(
+                                chat,
+                                $"Нужно добавить описание задачи: {BotConstants.CommandAddTask} [Описание задачи] или создано слишком много задач.",
+                                cancellationToken: ct);
                             break;
-                    }
+                        }
+
+                        context.CurrentStep = "Сценарий завершен.";
+                        scenarioResult = ScenarioResult.Completed;
+                        ReplyKeyboardMarkup _replyKeyboardDefault = await UpdateHandler.CreateKeyboardMarkupDefault();
+                        await botClient.SendMessage(chat, "Задача добавлена.", replyMarkup: _replyKeyboardDefault, cancellationToken: ct);
+
+                        return ScenarioResult.Completed;
+                    default:
+                        break;
                 }
             }
 
@@ -107,6 +105,9 @@ namespace TelegramBotLib.Core.Scenarios
             var scenarioResult = ScenarioResult.Transition;
             var telegramUser = UpdateHandler.GetUserFromUpdate(update);
             var toDoUser = await _userService.GetUser(telegramUser.Id, ct);
+            if (toDoUser == null)
+                return scenarioResult;
+
             var chat = UpdateHandler.GetChatFromUpdate(update);
             var currentStep = context.CurrentStep;
             ReplyKeyboardMarkup _replyKeyboard = await UpdateHandler.CreateKeyboardMarkupCancel();
@@ -116,7 +117,6 @@ namespace TelegramBotLib.Core.Scenarios
             switch (currentStep)
             {
                 case null:
-                    // TODO VS Какой должен быть ключ? Возможно ключ toDoUser.UserId. Хранить toDoUser.
                     context.Data.Add(toDoUser.TelegramUserId.ToString(), toDoUser);
                     await botClient.SendMessage(chat, "Введите название задачи:", replyMarkup: _replyKeyboard, cancellationToken: ct);
                     context.CurrentStep = "Name";
@@ -159,7 +159,7 @@ namespace TelegramBotLib.Core.Scenarios
                     // Создать inline-кнопки для выбора списка (категории) для задачи.
                     InlineKeyboardButton withOutList = InlineKeyboardButton.WithCallbackData(
                             text: "📌 Без списка",
-                            callbackData: $"SelectList|WithoutList");
+                            callbackData: $"SelectList|{string.Empty}");
                     InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup(withOutList);
                     // Добавить списки (категории) для задач, если есть в хранилище списков (категорий) для задач.
                     var userLists = await _toDoListService.GetUserLists(toDoUser.UserId, ct);

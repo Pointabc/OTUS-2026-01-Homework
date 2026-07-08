@@ -1,6 +1,6 @@
 ﻿namespace TelegramBotLib.Core.Scenarios
 {
-    enum ScenarioType { None, AddTask, AddList, DeleteList }
+    enum ScenarioType { None, AddTask, AddList, DeleteList, DeleteTask }
     internal class ScenarioContext
     {
         public ScenarioContext(ScenarioType scenarioType)
