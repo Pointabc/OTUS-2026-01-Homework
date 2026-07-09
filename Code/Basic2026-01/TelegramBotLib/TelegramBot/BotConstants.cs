@@ -28,6 +28,13 @@
         public const string FileUserRepositoryFolderName = "FileUserRepository";
         public const string FileListRepositoryFolderName = "FileListRepository";
         public const string FileIndexForToDoItems = "fileIndex.json";
+
+        #endregion
+
+        #region PostgreSQL
+
+        public const string ConnectionString = "Host=localhost;Port=5433;Database=ToDoList;UserId=postgres; Password=rx;";
+
         #endregion
     }
 }

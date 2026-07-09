@@ -27,7 +27,11 @@ namespace TelegramBotLib.Core.Services
             if (await _toDoListRepository.ExistsByName(user.UserId, name, ct))
                 throw new ArgumentException($"Cписка (категории) для задач с наименованием {name} уже создан.");
 
-            var toDoList = new ToDoList(name, user);
+            var toDoList = new ToDoList
+            {
+                Name = name,
+                User = user
+            };
             await _toDoListRepository.Add(toDoList, ct);
 
             return toDoList;

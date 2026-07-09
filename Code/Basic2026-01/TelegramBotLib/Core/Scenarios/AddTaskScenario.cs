@@ -124,7 +124,12 @@ namespace TelegramBotLib.Core.Scenarios
                 case "Name":
                     try
                     {
-                        _toDoItem = new ToDoItem(toDoUser, userInput, DateTime.MinValue);
+                        _toDoItem = new ToDoItem
+                        {
+                            User = toDoUser,
+                            Name = userInput,
+                            Deadline = DateTime.MinValue
+                        };
                         _toDoItem.Name = userInput;
                         context.CurrentStep = "Deadline";
                         await botClient.SendMessage(chat, "Введите срок выполнения (dd.MM.yyyy):", replyMarkup: _replyKeyboard, cancellationToken: ct);

@@ -22,7 +22,12 @@ namespace TelegramBotLib.Core.Services
 
         public async Task<ToDoUser> RegisterUser(long telegramUserId, string telegramUserName, CancellationToken cancellationToken)
         {
-            var user = new ToDoUser(telegramUserName, telegramUserId);
+            var user = new ToDoUser
+            {
+                TelegramUserName = telegramUserName,
+                TelegramUserId = telegramUserId,
+                UserId = Guid.NewGuid(),
+            };
             await _userRepository.Add(user, cancellationToken);
 
             return user;
