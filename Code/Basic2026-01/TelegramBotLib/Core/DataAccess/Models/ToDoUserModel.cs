@@ -7,8 +7,11 @@ namespace TelegramBotLib.Core.DataAccess.Models
     {
         [PrimaryKey]
         public Guid UserId { get; set; }
+        [Column]
         public long TelegramUserId { get; set; }
+        [Column]
         public string TelegramUserName { get; set; }
+        [Column]
         public DateTime RegisteredAt { get; set; }
     }
 }

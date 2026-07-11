@@ -66,10 +66,9 @@ namespace TelegramBotLib.Infrastructure.DataAccess
                 var toDoLists = await dbContext.ToDoLists
                     .LoadWith(i => i.User)
                     .Where(i => i.User!.UserId == userId)
-                    .Select(i => ModelMapper.MapFromModel(i))
                     .ToListAsync();
-
-                return toDoLists;
+                
+                return toDoLists.Select(i => ModelMapper.MapFromModel(i)).ToList().AsReadOnly();
             }
         }
     }

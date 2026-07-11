@@ -52,7 +52,6 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             using (var dbContext = _factory.CreateDataContext())
             {
                 return await dbContext.ToDoItems
-                    //.LoadWith(i => i.User)
                     .Where(i => i.User.UserId == userId && i.Name == name)
                     .AnyAsync();
             }
@@ -66,13 +65,11 @@ namespace TelegramBotLib.Infrastructure.DataAccess
                 var allItems = await dbContext.ToDoItems
                     .LoadWith(i => i.User)
                     .LoadWith(i => i.List)
-                    .LoadWith(i => i.List!.User)
-                    .Where(i => i.User!.UserId == userId)
-                    .Select(i => ModelMapper.MapFromModel(i))
+                    .Where(i => i.UserId == userId)
                     .ToListAsync(ct);
 
                 // Применяем предикат в памяти
-                var filteredItems = allItems.Where(predicate).ToList();
+                var filteredItems = allItems.Select(i => ModelMapper.MapFromModel(i)).Where(predicate).ToList();
 
                 return filteredItems.AsReadOnly();
             }
@@ -85,12 +82,10 @@ namespace TelegramBotLib.Infrastructure.DataAccess
                 var toDoItem = await dbContext.ToDoItems
                     .LoadWith(i => i.User)
                     .LoadWith(i => i.List)
-                    .LoadWith(i => i.List!.User)
                     .Where(i => i.Id == id)
-                    .Select(i => ModelMapper.MapFromModel(i))
                     .FirstOrDefaultAsync();
 
-                return toDoItem;
+                return toDoItem != null ? ModelMapper.MapFromModel(toDoItem) : null;
             }
         }
 
@@ -101,12 +96,10 @@ namespace TelegramBotLib.Infrastructure.DataAccess
                 var toDoItems = await dbContext.ToDoItems
                     .LoadWith(i => i.User)
                     .LoadWith(i => i.List)
-                    .LoadWith(i => i.List!.User)
-                    .Where(i => i.User!.UserId == userId && i.State == ToDoItemState.Active)
-                    .Select(i => ModelMapper.MapFromModel(i))
+                    .Where(i => i.UserId == userId && i.State == ToDoItemState.Active)
                     .ToListAsync();
 
-                return toDoItems;
+                return toDoItems.Select(x => ModelMapper.MapFromModel(x)).ToList().AsReadOnly();
             }
         }
 
@@ -117,12 +110,10 @@ namespace TelegramBotLib.Infrastructure.DataAccess
                 var toDoItems = await dbContext.ToDoItems
                     .LoadWith(i => i.User)
                     .LoadWith(i => i.List)
-                    .LoadWith(i => i.List!.User)
-                    .Where(i => i.User!.UserId == userId)
-                    .Select(i => ModelMapper.MapFromModel(i))
+                    .Where(i => i.UserId == userId)
                     .ToListAsync();
 
-                return toDoItems;
+                return toDoItems.Select(i => ModelMapper.MapFromModel(i)).ToList().AsReadOnly();
             }
         }
 
@@ -134,7 +125,6 @@ namespace TelegramBotLib.Infrastructure.DataAccess
                 var toDoItemModelFinded = await dbContext.ToDoItems
                     .LoadWith(i => i.User)
                     .LoadWith(i => i.List)
-                    .LoadWith(i => i.List!.User)
                     .FirstOrDefaultAsync(i => i.Id == item.Id, ct);
 
                 if (toDoItemModelFinded == null)
@@ -143,8 +133,7 @@ namespace TelegramBotLib.Infrastructure.DataAccess
                 toDoItemModelFinded.State = ToDoItemState.Completed;
                 toDoItemModelFinded.StateChangedAt = DateTime.Now;
 
-                var toDoItemModel = ModelMapper.MapToModel(item);
-                await dbContext.UpdateAsync(toDoItemModel, token: ct);
+                await dbContext.UpdateAsync(toDoItemModelFinded, token: ct);
             }
         }
     }

@@ -43,7 +43,8 @@ namespace TelegramBotLib.Core.Services
             {
                 User = user,
                 Name = name,
-                Deadline = deadline
+                StateChangedAt = DateTime.Now,
+                Id = Guid.NewGuid(),
             };
             await _toDoRepository.Add(toDoItem, cancellationToken);
 

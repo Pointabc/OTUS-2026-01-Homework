@@ -8,16 +8,23 @@ namespace TelegramBotLib.Core.DataAccess.Models
     {
         [PrimaryKey]
         public Guid Id { get; set; }
-        [Association(ThisKey = nameof(UserId), OtherKey = nameof(ToDoUser.UserId))]
+        [Column]
         public Guid UserId { get; set; }
+        [Association(ThisKey = nameof(UserId), OtherKey = nameof(ToDoUserModel.UserId))]
         public ToDoUser User { get; set; }
+        [Column]
         public string Name { get; set; }
+        [Column]
         public DateTime CreatedAt { get; set; }
+        [Column]
         public ToDoItemState State { get; set; }
+        [Column]
         public DateTime? StateChangedAt { get; set; }
+        [Column]
         public DateTime Deadline { get; set; }
-        [Association(ThisKey = nameof(ListId), OtherKey = nameof(ToDoList.Id))]
-        public Guid ListId { get; set; }
+        [Column]
+        public Guid? ListId { get; set; }
+        [Association(ThisKey = nameof(ListId), OtherKey = nameof(ToDoListModel.Id))]
         public ToDoList? List { get; set; }
     }
 }

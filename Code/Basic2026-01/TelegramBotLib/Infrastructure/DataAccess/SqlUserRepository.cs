@@ -30,10 +30,10 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             {
                 var toDoUser = await dbContext.ToDoUsers
                     .Where(i => i.UserId == userId)
-                    .Select(i => ModelMapper.MapFromModel(i))
+                    
                     .FirstOrDefaultAsync();
 
-                return toDoUser;
+                return toDoUser != null ? ModelMapper.MapFromModel(toDoUser) : null;
             }
         }
 
@@ -47,7 +47,7 @@ namespace TelegramBotLib.Infrastructure.DataAccess
                     .Where(i => i.TelegramUserId == telegramUserId)
                     .FirstOrDefaultAsync();
 
-                return ModelMapper.MapFromModel(toDoUser);
+                return toDoUser != null ? ModelMapper.MapFromModel(toDoUser) : null;
             }
         }
     }

@@ -1,7 +1,6 @@
 ﻿using LinqToDB;
 using LinqToDB.Data;
 using TelegramBotLib.Core.DataAccess.Models;
-using TelegramBotLib.Core.Entities;
 
 namespace TelegramBotLib.Infrastructure.DataAccess
 {

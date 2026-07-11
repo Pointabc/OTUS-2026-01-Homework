@@ -1,6 +1,5 @@
 ﻿using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Entities;
-using TelegramBotLib.Core.Exceptions;
 
 namespace TelegramBotLib.Core.Services
 {
@@ -30,7 +29,9 @@ namespace TelegramBotLib.Core.Services
             var toDoList = new ToDoList
             {
                 Name = name,
-                User = user
+                User = user,
+                CreatedAt = DateTime.UtcNow,
+                Id = Guid.NewGuid(),
             };
             await _toDoListRepository.Add(toDoList, ct);
 

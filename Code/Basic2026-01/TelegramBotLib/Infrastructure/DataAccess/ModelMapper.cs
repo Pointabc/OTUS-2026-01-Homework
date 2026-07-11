@@ -19,34 +19,6 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             };
         }
 
-        public static ToDoUser Map(ToDoUserModel model)
-        {
-            if (model == null)
-                throw new ArgumentNullException(nameof(model));
-
-            return new ToDoUser
-            {
-                TelegramUserId = model.TelegramUserId,
-                UserId = model.UserId,
-                TelegramUserName = model.TelegramUserName,
-                RegisteredAt = model.RegisteredAt
-            };
-        }
-
-        public static ToDoUserModel Map(ToDoUser entity)
-        {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
-
-            return new ToDoUserModel
-            {
-                TelegramUserId = entity.TelegramUserId,
-                UserId = entity.UserId,
-                TelegramUserName = entity.TelegramUserName,
-                RegisteredAt = entity.RegisteredAt
-            };
-        }
-
         public static ToDoUserModel MapToModel(ToDoUser entity)
         {
             if (entity == null)
@@ -92,7 +64,7 @@ namespace TelegramBotLib.Infrastructure.DataAccess
                 State = entity.State,
                 StateChangedAt = entity.StateChangedAt,
                 Deadline = entity.Deadline,
-                ListId = entity.List?.Id ?? Guid.Empty, // или default, если List null
+                ListId = entity.List?.Id,
                 List = entity.List
             };
         }

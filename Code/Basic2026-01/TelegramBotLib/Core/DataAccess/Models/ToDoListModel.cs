@@ -8,10 +8,13 @@ namespace TelegramBotLib.Core.DataAccess.Models
     {
         [PrimaryKey]
         public Guid Id { get; set; }
+        [Column]
         public string Name { get; set; }
-        [Association(ThisKey = nameof(UserId), OtherKey = nameof(ToDoUser.UserId))]
+        [Column]
         public Guid UserId { get; set; }
+        [Association(ThisKey = nameof(UserId), OtherKey = nameof(ToDoUserModel.UserId))]
         public ToDoUser User { get; set; }
+        [Column]
         public DateTime CreatedAt { get; set; }
     }
 }
