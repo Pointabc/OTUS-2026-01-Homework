@@ -31,10 +31,5 @@
 
         #endregion
 
-        #region PostgreSQL
-
-        public const string ConnectionString = "Host=localhost;Port=5433;Database=ToDoList;UserId=postgres; Password=rx;";
-
-        #endregion
     }
 }

@@ -16,6 +16,9 @@ namespace TelegramBotLib.Infrastructure.DataAccess
 
         public async Task Add(ToDoItem item, CancellationToken ct)
         {
+            if (item == null)
+                throw new ArgumentNullException($"В методе {nameof(Add)} item = null.");
+
             using (var dbContext = _factory.CreateDataContext())
             {
                 var toDoItemModel = ModelMapper.MapToModel(item);

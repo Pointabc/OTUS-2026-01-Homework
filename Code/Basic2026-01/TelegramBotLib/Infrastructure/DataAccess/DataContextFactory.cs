@@ -1,12 +1,13 @@
-﻿using TelegramBotLib.TelegramBot;
+﻿namespace TelegramBotLib.Infrastructure.DataAccess;
 
-namespace TelegramBotLib.Infrastructure.DataAccess
+internal class DataContextFactory : IDataContextFactory<ToDoDataContext>
 {
-    internal class DataContextFactory : IDataContextFactory<ToDoDataContext>
+    public ToDoDataContext CreateDataContext()
     {
-        public ToDoDataContext CreateDataContext()
-        {
-            return new ToDoDataContext(BotConstants.ConnectionString);
-        }
+        var connectionString = Environment.GetEnvironmentVariable("ToDoEducationBotConnectionString", EnvironmentVariableTarget.User);
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new ArgumentNullException("Отсутствует строка подключения к БД в переменных среды текущего пользователя");
+
+        return new ToDoDataContext(connectionString);
     }
 }
