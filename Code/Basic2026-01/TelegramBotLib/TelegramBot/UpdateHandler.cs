@@ -3,7 +3,6 @@ using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Entities;
@@ -18,12 +17,13 @@ namespace TelegramBotLib.TelegramBot
 {
     internal class UpdateHandler : IUpdateHandler
     {
+        //I
         IToDoService _toDoService;
         IUserService _userService;
         IToDoListService _toDoListService;
         IUserRepository _userRepository;
         IToDoReportService _toDoReportService;
-        IToDoRepository _toDoRepository;
+        IToDoRepository _toDoRepository;                            //
         IToDoRepositoryIndex _toDoRepositoryIndex;
         IToDoListRepository _toDoListRepository;
         string _userCommand = string.Empty;
@@ -36,20 +36,22 @@ namespace TelegramBotLib.TelegramBot
         int _currentPage = 0;
 
         public UpdateHandler(
-            string pathToDoItemsRepository,
-            string pathUsersRepositoty,
-            string pathToDoListRepository,
-            IToDoRepositoryIndex toDoRepositoryIndex,
             IEnumerable<IScenario> scenarios,
             IScenarioContextRepository contextRepository,
             ITelegramBotClient botClient)
         {
-            _toDoRepositoryIndex = toDoRepositoryIndex;
-            _toDoRepository = new FileToDoRepository(pathToDoItemsRepository, _toDoRepositoryIndex);
-            _toDoListRepository = new FileToDoListRepository(pathToDoListRepository);
+
+            //_toDoRepositoryIndex = toDoRepositoryIndex;
+            //_toDoRepository = new FileToDoRepository(pathToDoItemsRepository, _toDoRepositoryIndex);
+            var dataContextFactory = new DataContextFactory();
+            dataContextFactory.CreateDataContext();
+            _toDoRepository = new SqlToDoRepository(dataContextFactory);
+            //_toDoListRepository = new FileToDoListRepository(pathToDoListRepository);
+            _toDoListRepository = new SqlToDoListRepository(dataContextFactory);
             _toDoListService = new ToDoListService(_toDoListRepository);
             _toDoService = new ToDoService(_toDoRepository, _toDoListService);
-            _userRepository = new FileUserRepository(pathUsersRepositoty);
+            //_userRepository = new FileUserRepository(pathUsersRepositoty);
+            _userRepository = new SqlUserRepository(dataContextFactory);
             _userService = new UserService(_userRepository);
             _toDoReportService = new ToDoReportService(_toDoRepository);
             _replyKeyboard = new ReplyKeyboardMarkup();

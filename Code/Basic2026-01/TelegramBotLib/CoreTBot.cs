@@ -86,10 +86,6 @@ namespace TelegramBotLib
                 var cancellationToken = cancellationTokenSource.Token;
                 var botClient = new TelegramBotClient(token, httpClient, cancellationToken);
                 var handler = new UpdateHandler(
-                    toDoItemRepositoryFolder,
-                    userRepositoryFolder,
-                    listRepositoryFolder,
-                    toDoRepositoryIndex,
                     scenarios,
                     contextRepository,
                     botClient);
@@ -103,13 +99,9 @@ namespace TelegramBotLib
                 {
                     new BotCommand { Command = "start", Description = "Начать работать с ботом." },
                     new BotCommand { Command = "help", Description = "Вывести команды." },
-                    //new BotCommand { Command = "info", Description = "Вывести информацию о Telegram боте." },
                     new BotCommand { Command = "addtask", Description = "Добавить задчу." },
                     new BotCommand { Command = "show", Description = "Вывести задачи в работе." },
-                    //new BotCommand { Command = "removetask", Description = "Удалить задачу." },
-                    //new BotCommand { Command = "completetask", Description = "Установить статус задачи на Завершена." },
                     new BotCommand { Command = "report", Description = "Вывести отчет по задачам." },
-                    //new BotCommand { Command = "find", Description = "Вывести задачи, которые начинаются на префикс." },
                 };
 
                 // Устанавливаем команды

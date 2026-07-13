@@ -1,6 +1,5 @@
 ﻿using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Entities;
-using TelegramBotLib.Core.Exceptions;
 
 namespace TelegramBotLib.Core.Services
 {
@@ -27,7 +26,13 @@ namespace TelegramBotLib.Core.Services
             if (await _toDoListRepository.ExistsByName(user.UserId, name, ct))
                 throw new ArgumentException($"Cписка (категории) для задач с наименованием {name} уже создан.");
 
-            var toDoList = new ToDoList(name, user);
+            var toDoList = new ToDoList
+            {
+                Name = name,
+                User = user,
+                CreatedAt = DateTime.UtcNow,
+                Id = Guid.NewGuid(),
+            };
             await _toDoListRepository.Add(toDoList, ct);
 
             return toDoList;

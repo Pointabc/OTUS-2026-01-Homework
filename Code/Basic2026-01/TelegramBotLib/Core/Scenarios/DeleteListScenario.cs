@@ -122,7 +122,7 @@ namespace TelegramBotLib.Core.Scenarios
                 case "yes":
                     scenarioResult = ScenarioResult.Completed;
                     // Удалить задачи в списке (категории) для задач.
-                    var tasks = await _toDoService.GetByUserIdAndList(toDoUser.UserId, toDoListCallbackDto.ToDoListId, ct);
+                    var tasks = await _toDoService.GetByUserIdAndList(toDoUser.UserId, _listId, ct);
 
                     foreach (var task in tasks)
                         await _toDoService.Delete(task.Id, ct);

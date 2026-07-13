@@ -70,6 +70,7 @@ namespace TelegramBotLib.Core.Scenarios
                             : null;
 
                         _toDoItem.List = list;
+                        _toDoItem.StateChangedAt = DateTime.UtcNow;
 
                         var task = await _toDoService.Add(_toDoItem, ct);
                         if (task == null)
@@ -124,7 +125,12 @@ namespace TelegramBotLib.Core.Scenarios
                 case "Name":
                     try
                     {
-                        _toDoItem = new ToDoItem(toDoUser, userInput, DateTime.MinValue);
+                        _toDoItem = new ToDoItem
+                        {
+                            User = toDoUser,
+                            Name = userInput,
+                            Id = Guid.NewGuid(),
+                        };
                         _toDoItem.Name = userInput;
                         context.CurrentStep = "Deadline";
                         await botClient.SendMessage(chat, "Введите срок выполнения (dd.MM.yyyy):", replyMarkup: _replyKeyboard, cancellationToken: ct);

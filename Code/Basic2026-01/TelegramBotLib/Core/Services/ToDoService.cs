@@ -39,7 +39,13 @@ namespace TelegramBotLib.Core.Services
                 throw new ArgumentException($"Можно создать задач: {_maxNumber}.");
             }
 
-            var toDoItem = new ToDoItem(user, name, deadline);
+            var toDoItem = new ToDoItem
+            {
+                User = user,
+                Name = name,
+                StateChangedAt = DateTime.Now,
+                Id = Guid.NewGuid(),
+            };
             await _toDoRepository.Add(toDoItem, cancellationToken);
 
             return toDoItem;

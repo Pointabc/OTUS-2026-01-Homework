@@ -2,7 +2,7 @@
 {
     public enum ToDoItemState { Active, Completed }
 
-    internal class ToDoItem
+    public class ToDoItem
     {
         public Guid Id { get; set; }
         public ToDoUser User { get; set; }
@@ -12,15 +12,5 @@
         public DateTime? StateChangedAt { get; set; }
         public DateTime Deadline { get; set; }
         public ToDoList? List { get; set; }
-
-        public ToDoItem(ToDoUser user, string name, DateTime deadline)
-        {
-            Id = Guid.NewGuid();
-            User = user;
-            Name = name;
-            Deadline = deadline;
-            CreatedAt = DateTime.Now;
-            State = ToDoItemState.Active;
-        }
     }
 }

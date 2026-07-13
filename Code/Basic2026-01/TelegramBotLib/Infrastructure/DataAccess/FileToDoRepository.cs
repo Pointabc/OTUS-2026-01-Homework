@@ -21,12 +21,7 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             _toDoRepositoryIndex = toDoRepositoryIndex;
         }
 
-        /// <summary>
-        /// Добавить задачу.
-        /// </summary>
-        /// <param name="item">Задача.</param>
-        /// <param name="cancellationToken">Токен отмены.</param>
-        public async Task Add(ToDoItem item, CancellationToken cancellationToken)
+        public async Task Add(ToDoItem item, CancellationToken ct)
         {
             // Проверить есть ли папка для задач пользователя, при отсутствии создать.
             var userFolderForToDoItems = Path.Combine(_toDoItemRepositoryFolder, $"{item.User.UserId}");
@@ -36,28 +31,17 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             string filePath = Path.Combine(userFolderForToDoItems, $"{item.Id}.json");
             string jsonString = JsonSerializer.Serialize(item);
 
-            await File.WriteAllTextAsync(filePath, jsonString, cancellationToken);
-            await _toDoRepositoryIndex.Add(item, cancellationToken);
+            await File.WriteAllTextAsync(filePath, jsonString, ct);
+            await _toDoRepositoryIndex.Add(item, ct);
         }
 
-        /// <summary>
-        /// Получить активные задачи пользователя.
-        /// </summary>
-        /// <param name="userId">ИД пользователя.</param>
-        /// <param name="cancellationToken">Токен отмены.</param>
-        /// <returns>Количество активных задач пользователя.</returns>
-        public async Task<int> CountActive(Guid userId, CancellationToken cancellationToken)
+        public async Task<int> CountActive(Guid userId, CancellationToken ct)
         {
-            var tasks = await Find(userId, x => x.State == ToDoItemState.Active, cancellationToken);
+            var tasks = await Find(userId, x => x.State == ToDoItemState.Active, ct);
             return tasks.Count;
         }
 
-        /// <summary>
-        /// Удалить задачу.
-        /// </summary>
-        /// <param name="id">Гуид задачи.</param>
-        /// <param name="cancellationToken">Токен отмены.</param>
-        public async Task Delete(Guid id, CancellationToken cancellationToken)
+        public async Task Delete(Guid id, CancellationToken ct)
         {
             var fileIndex = ((FileToDoRepositoryIndex)_toDoRepositoryIndex).GetFileIndexName();
             var files = Directory.GetFiles(_toDoItemRepositoryFolder, "*.json", SearchOption.AllDirectories);
@@ -66,39 +50,25 @@ namespace TelegramBotLib.Infrastructure.DataAccess
                 if (file.EndsWith(fileIndex))
                     continue;
 
-                string json = await File.ReadAllTextAsync(file, cancellationToken);
+                string json = await File.ReadAllTextAsync(file, ct);
                 var toDoItem = JsonSerializer.Deserialize<ToDoItem>(json);
 
                 if (toDoItem != null && toDoItem.Id == id)
                 {
                     File.Delete(file);
-                    await _toDoRepositoryIndex.Delete(id, cancellationToken);
+                    await _toDoRepositoryIndex.Delete(id, ct);
                     break;
                 }
             }
         }
 
-        /// <summary>
-        /// Есть ли задача пользователя с имененем.
-        /// </summary>
-        /// <param name="userId">ИД пользователя.</param>
-        /// <param name="name">Название задачи.</param>
-        /// <param name="cancellationToken">Токен отмены.</param>
-        /// <returns>True - задача есть, иначе задача не найдена.</returns>
-        public async Task<bool> ExistsByName(Guid userId, string name, CancellationToken cancellationToken)
+        public async Task<bool> ExistsByName(Guid userId, string name, CancellationToken ct)
         {
-            var toDoItems = await Find(userId, x => x.Name == name, cancellationToken);
+            var toDoItems = await Find(userId, x => x.Name == name, ct);
             return toDoItems.Any();
         }
 
-        /// <summary>
-        /// Найти задачи пользователя.
-        /// </summary>
-        /// <param name="userId">ИД пользователя.</param>
-        /// <param name="predicate">Условие поиска задачи пользователя.</param>
-        /// <param name="cancellationToken">Токен отмены.</param>
-        /// <returns>Задачи пользователя.</returns>
-        public async Task<IReadOnlyList<ToDoItem>> Find(Guid userId, Func<ToDoItem, bool> predicate, CancellationToken cancellationToken)
+        public async Task<IReadOnlyList<ToDoItem>> Find(Guid userId, Func<ToDoItem, bool> predicate, CancellationToken ct)
         {
             var toDoItems = new List<ToDoItem>();
             var userFolderForToDoItems = Path.Combine(_toDoItemRepositoryFolder, $"{userId}");
@@ -118,13 +88,7 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             return toDoItems;
         }
 
-        /// <summary>
-        /// Получить задачу пользователя по ИД задачи.
-        /// </summary>
-        /// <param name="id">ИД задачи.</param>
-        /// <param name="cancellationToken">Токен отмены.</param>
-        /// <returns>Задача, иначе null.</returns>
-        public async Task<ToDoItem?> Get(Guid id, CancellationToken cancellationToken)
+        public async Task<ToDoItem?> Get(Guid id, CancellationToken ct)
         {
             var files = Directory.GetFiles(_toDoItemRepositoryFolder, "*.json", SearchOption.AllDirectories);
             foreach (var file in files)
@@ -142,36 +106,19 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             return null;
         }
 
-        /// <summary>
-        /// Получить активные задачи пользователя.
-        /// </summary>
-        /// <param name="userId">ИД пользователя.</param>
-        /// <param name="cancellationToken">Токен отмены.</param>
-        /// <returns>Активные задачи пользователя.</returns>
-        public async Task<IReadOnlyList<ToDoItem>> GetActiveByUserId(Guid userId, CancellationToken cancellationToken)
+        public async Task<IReadOnlyList<ToDoItem>> GetActiveByUserId(Guid userId, CancellationToken ct)
         {
-            var toDoItems = await Find(userId, x => x.State == ToDoItemState.Active, cancellationToken);
+            var toDoItems = await Find(userId, x => x.State == ToDoItemState.Active, ct);
             return toDoItems;
         }
 
-        /// <summary>
-        /// Получить все задачи пользователя.
-        /// </summary>
-        /// <param name="userId">ИД пользователя.</param>
-        /// <param name="cancellationToken">Токен отмены.</param>
-        /// <returns>Задачи пользователя (активные и завершенные).</returns>
-        public async Task<IReadOnlyList<ToDoItem>> GetAllByUserId(Guid userId, CancellationToken cancellationToken)
+        public async Task<IReadOnlyList<ToDoItem>> GetAllByUserId(Guid userId, CancellationToken ct)
         {
-            var toDoItems = await Find(userId, x => true, cancellationToken);
+            var toDoItems = await Find(userId, x => true, ct);
             return toDoItems;
         }
 
-        /// <summary>
-        /// Обновить статус задачи (Задача выполнена).
-        /// </summary>
-        /// <param name="item">Задача.</param>
-        /// <param name="cancellationToken">Токен отмены.</param>
-        public async Task Update(ToDoItem item, CancellationToken cancellationToken)
+        public async Task Update(ToDoItem item, CancellationToken ct)
         {
             // TODO VS Искать задачи только в папке пользователя, сейчас ищет во всех папках.
             var files = Directory.GetFiles(_toDoItemRepositoryFolder, "*.json", SearchOption.AllDirectories);
@@ -191,7 +138,7 @@ namespace TelegramBotLib.Infrastructure.DataAccess
 
                     // Перезаписать файл.
                     string jsonString = JsonSerializer.Serialize(toDoItem);
-                    await File.WriteAllTextAsync(file, jsonString, cancellationToken);
+                    await File.WriteAllTextAsync(file, jsonString, ct);
                     break;
                 }
             }

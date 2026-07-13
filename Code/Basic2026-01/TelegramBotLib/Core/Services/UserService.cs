@@ -1,13 +1,10 @@
 ﻿using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Entities;
-using TelegramBotLib.Infrastructure.DataAccess;
-using TelegramBotLib.TelegramBot;
 
 namespace TelegramBotLib.Core.Services
 {
     internal class UserService : IUserService
     {
-        //private IUserRepository _inMemoryUserRepository = new InMemoryUserRepository();
         private IUserRepository _userRepository;
 
         public UserService(IUserRepository userRepository)
@@ -22,7 +19,14 @@ namespace TelegramBotLib.Core.Services
 
         public async Task<ToDoUser> RegisterUser(long telegramUserId, string telegramUserName, CancellationToken cancellationToken)
         {
-            var user = new ToDoUser(telegramUserName, telegramUserId);
+            var user = new ToDoUser
+            {
+                TelegramUserName = telegramUserName,
+                TelegramUserId = telegramUserId,
+                UserId = Guid.NewGuid(),
+                RegisteredAt = DateTime.UtcNow,
+            };
+
             await _userRepository.Add(user, cancellationToken);
 
             return user;
