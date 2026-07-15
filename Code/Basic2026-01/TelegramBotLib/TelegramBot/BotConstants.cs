@@ -31,5 +31,11 @@
 
         #endregion
 
+        #region Ключи для Dictionary
+
+        public const string KeyUserIdName = "userId";
+
+        #endregion
+
     }
 }

@@ -3,6 +3,7 @@ using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using TelegramBotLib.Core.BackgroundTasks;
 using TelegramBotLib.Core.Scenarios;
 using TelegramBotLib.Infrastructure.DataAccess;
 using TelegramBotLib.TelegramBot;
@@ -83,8 +84,14 @@ namespace TelegramBotLib
                 }
 
                 var cancellationTokenSource = new CancellationTokenSource();
-                var cancellationToken = cancellationTokenSource.Token;
-                var botClient = new TelegramBotClient(token, httpClient, cancellationToken);
+                var ct = cancellationTokenSource.Token;
+                var botClient = new TelegramBotClient(token, httpClient, ct);
+
+                using var backgroundTaskRunner = new BackgroundTaskRunner();
+                backgroundTaskRunner.AddTask(new ResetScenarioBackgroundTask(TimeSpan.FromHours(1), contextRepository, botClient));
+                // Запустить фоновые задачи.
+                backgroundTaskRunner.StartTasks(ct);
+
                 var handler = new UpdateHandler(
                     scenarios,
                     contextRepository,
@@ -122,19 +129,21 @@ namespace TelegramBotLib
                     }
                 };
 
-                botClient.StartReceiving(handler, receiveroptions, cancellationToken);
+                botClient.StartReceiving(handler, receiveroptions, ct);
                 var me = await botClient.GetMe();
                 WriteLine($"{me.FirstName} запущен!");
                 WriteLine("Нажмите клавишу A для выхода.");
 
                 // Отмена асинхронных операции и остановка приложения при нажатии клавиши A.
-                await Task.Run(() =>
+                await Task.Run(async () =>
                 {
                     while (true)
                     {
                         var key = ReadKey(true);
                         if (key.Key == ConsoleKey.A)
                         {
+                            await backgroundTaskRunner.StopTasks(ct);
+                            WriteLine("Фоновые задачи остановлены.");
                             cancellationTokenSource.Cancel();
                             WriteLine("Bot stopping...");
                             break;
@@ -148,7 +157,7 @@ namespace TelegramBotLib
 
                 try
                 {
-                    await Task.Delay(Timeout.Infinite, cancellationToken); // Устанавливаем бесконечную задержку.
+                    await Task.Delay(Timeout.Infinite, ct); // Устанавливаем бесконечную задержку.
                 }
                 catch (TaskCanceledException)
                 {
