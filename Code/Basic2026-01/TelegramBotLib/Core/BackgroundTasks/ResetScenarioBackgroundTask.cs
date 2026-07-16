@@ -14,9 +14,8 @@ internal class ResetScenarioBackgroundTask : BackgroundTask
         TimeSpan resetScenarioTimeout,
         IScenarioContextRepository scenarioRepository,
         ITelegramBotClient bot)
-        : base(TimeSpan.FromHours(1), nameof(ResetScenarioBackgroundTask))
+        : base(resetScenarioTimeout, nameof(ResetScenarioBackgroundTask))
     {
-        _resetScenarioTimeout = TimeSpan.FromHours(1);
         _scenarioRepository = scenarioRepository;
         _bot = bot;
     }

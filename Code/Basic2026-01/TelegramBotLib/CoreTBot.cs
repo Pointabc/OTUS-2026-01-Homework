@@ -5,7 +5,6 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using TelegramBotLib.Core.BackgroundTasks;
 using TelegramBotLib.Core.Scenarios;
-using TelegramBotLib.Infrastructure.DataAccess;
 using TelegramBotLib.TelegramBot;
 using static System.Console;
 
@@ -41,7 +40,7 @@ namespace TelegramBotLib
                 #region Создать структуру хранилища
 
                 // Создать папку для хранения задач.
-                var toDoItemRepositoryFolder = BotConstants.FileToDoItemRepositoryFolderName;
+                /*var toDoItemRepositoryFolder = BotConstants.FileToDoItemRepositoryFolderName;
                 if (!Directory.Exists(toDoItemRepositoryFolder))
                     Directory.CreateDirectory(toDoItemRepositoryFolder);
 
@@ -59,7 +58,7 @@ namespace TelegramBotLib
                 // Создать папку для хранения списков (категорий) для задач пользователей.
                 var listRepositoryFolder = BotConstants.FileListRepositoryFolderName;
                 if (!Directory.Exists(listRepositoryFolder))
-                    Directory.CreateDirectory(listRepositoryFolder);
+                    Directory.CreateDirectory(listRepositoryFolder);*/
 
                 #endregion
 
@@ -72,8 +71,8 @@ namespace TelegramBotLib
 
                 #region Создать botClient
 
-                var toDoRepositoryIndex = new FileToDoRepositoryIndex(fileIndex);
-                await toDoRepositoryIndex.UpdateFileIndex();
+                //var toDoRepositoryIndex = new FileToDoRepositoryIndex(fileIndex);
+                //await toDoRepositoryIndex.UpdateFileIndex();
 
                 // Get token from environment variable
                 string? token = Environment.GetEnvironmentVariable("ToDoTelegramBotTokenOTUSBasic", EnvironmentVariableTarget.User);
