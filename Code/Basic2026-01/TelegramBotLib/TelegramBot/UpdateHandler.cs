@@ -41,16 +41,12 @@ namespace TelegramBotLib.TelegramBot
             ITelegramBotClient botClient)
         {
 
-            //_toDoRepositoryIndex = toDoRepositoryIndex;
-            //_toDoRepository = new FileToDoRepository(pathToDoItemsRepository, _toDoRepositoryIndex);
             var dataContextFactory = new DataContextFactory();
             dataContextFactory.CreateDataContext();
             _toDoRepository = new SqlToDoRepository(dataContextFactory);
-            //_toDoListRepository = new FileToDoListRepository(pathToDoListRepository);
             _toDoListRepository = new SqlToDoListRepository(dataContextFactory);
             _toDoListService = new ToDoListService(_toDoListRepository);
             _toDoService = new ToDoService(_toDoRepository, _toDoListService);
-            //_userRepository = new FileUserRepository(pathUsersRepositoty);
             _userRepository = new SqlUserRepository(dataContextFactory);
             _userService = new UserService(_userRepository);
             _toDoReportService = new ToDoReportService(_toDoRepository);
@@ -332,20 +328,27 @@ namespace TelegramBotLib.TelegramBot
                     break;
                 case "deletetask":
                     var deleteTaskScenarioContext = new ScenarioContext(ScenarioType.DeleteTask);
+                    deleteTaskScenarioContext.Data.Add(BotConstants.KeyUserIdName, chat.Id);
                     var deleteTaskScenario = new DeleteTaskScenario(_toDoService);
                     _scenarios = _scenarios.Append(deleteTaskScenario).ToList();
                     await ProcessScenario(deleteTaskScenarioContext, update, ct);
                     break;
                 case "addlist":
-                    var newScenarioContext = new ScenarioContext(ScenarioType.AddList);
-                    newScenarioContext.UserId = toDoUser.TelegramUserId;
+                    var newScenarioContext = new ScenarioContext(ScenarioType.AddList)
+                    {
+                        UserId = toDoUser.TelegramUserId
+                    };
+                    newScenarioContext.Data.Add(BotConstants.KeyUserIdName, chat.Id);
                     var addListScenario = new AddListScenario(_userService, _toDoListService);
                     _scenarios = _scenarios.Append(addListScenario).ToList();
                     await ProcessScenario(newScenarioContext, update, ct);
                     break;
                 case "deletelist":
-                    var deleteListScenarioContext = new ScenarioContext(ScenarioType.DeleteList);
-                    deleteListScenarioContext.UserId = toDoUser.TelegramUserId;
+                    var deleteListScenarioContext = new ScenarioContext(ScenarioType.DeleteList)
+                    {
+                        UserId = toDoUser.TelegramUserId
+                    };
+                    deleteListScenarioContext.Data.Add(BotConstants.KeyUserIdName, chat.Id);
                     var deleteListScenario = new DeleteListScenario(_userService, _toDoListService, _toDoService);
                     _scenarios = _scenarios.Append(deleteListScenario).ToList();
                     await ProcessScenario(deleteListScenarioContext, update, ct);
@@ -408,8 +411,11 @@ namespace TelegramBotLib.TelegramBot
 
                         #region Запустить сессиею/сценарий пользователя добавления задачи.
 
-                        var newScenarioContext = new ScenarioContext(ScenarioType.AddTask);
-                        newScenarioContext.UserId = toDoUser.TelegramUserId;
+                        var newScenarioContext = new ScenarioContext(ScenarioType.AddTask)
+                        {
+                            UserId = toDoUser.TelegramUserId
+                        };
+                        newScenarioContext.Data.Add(BotConstants.KeyUserIdName, chat.Id);
                         var taskScenario = new AddTaskScenario(_userService, _toDoService, _toDoListService);
                         _scenarios = _scenarios.Append(taskScenario).ToList();
                         await ProcessScenario(newScenarioContext, update, ct);

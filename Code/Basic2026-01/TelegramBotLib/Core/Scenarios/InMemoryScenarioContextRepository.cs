@@ -1,27 +1,31 @@
 ﻿using System.Collections.Concurrent;
 
-namespace TelegramBotLib.Core.Scenarios
+namespace TelegramBotLib.Core.Scenarios;
+
+internal class InMemoryScenarioContextRepository : IScenarioContextRepository
 {
-    internal class InMemoryScenarioContextRepository : IScenarioContextRepository
+    ConcurrentDictionary<long, ScenarioContext> _contextRepository = new ConcurrentDictionary<long, ScenarioContext>();
+    public async Task<ScenarioContext?> GetContext(long userId, CancellationToken ct)
     {
-        ConcurrentDictionary<long, ScenarioContext> _contextRepository = new ConcurrentDictionary<long, ScenarioContext>();
-        public async Task<ScenarioContext?> GetContext(long userId, CancellationToken ct)
-        {
-            ScenarioContext? scenario = null;
-            _contextRepository.TryGetValue(userId, out scenario);
+        ScenarioContext? scenario = null;
+        _contextRepository.TryGetValue(userId, out scenario);
 
-            return scenario;
-        }
+        return scenario;
+    }
 
-        public async Task ResetContext(long userId, CancellationToken ct)
-        {
-            ScenarioContext scenario = null;
-            _contextRepository.Remove(userId, out scenario);
-        }
+    public async Task<IReadOnlyList<ScenarioContext>> GetContexts(CancellationToken ct)
+    {
+        return _contextRepository.Values.ToList();
+    }
 
-        public async Task SetContext(long userId, ScenarioContext context, CancellationToken ct)
-        {
-            _contextRepository[userId] = context;
-        }
+    public async Task ResetContext(long userId, CancellationToken ct)
+    {
+        ScenarioContext scenario = null;
+        _contextRepository.Remove(userId, out scenario);
+    }
+
+    public async Task SetContext(long userId, ScenarioContext context, CancellationToken ct)
+    {
+        _contextRepository[userId] = context;
     }
 }
