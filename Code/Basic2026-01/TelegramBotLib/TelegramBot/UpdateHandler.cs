@@ -17,14 +17,13 @@ namespace TelegramBotLib.TelegramBot
 {
     internal class UpdateHandler : IUpdateHandler
     {
-        //I
         IToDoService _toDoService;
         IUserService _userService;
         IToDoListService _toDoListService;
         IUserRepository _userRepository;
         IToDoReportService _toDoReportService;
         IToDoRepository _toDoRepository;                            //
-        IToDoRepositoryIndex _toDoRepositoryIndex;
+        //IToDoRepositoryIndex _toDoRepositoryIndex;
         IToDoListRepository _toDoListRepository;
         string _userCommand = string.Empty;
         string _commandArgument = string.Empty;
@@ -38,18 +37,33 @@ namespace TelegramBotLib.TelegramBot
         public UpdateHandler(
             IEnumerable<IScenario> scenarios,
             IScenarioContextRepository contextRepository,
+            IDataContextFactory<ToDoDataContext> dataContextFactory,
+            IToDoRepository toDoRepository,
+            IUserRepository userRepository,
+            IToDoListRepository toDoListRepository,
+            IToDoListService toDoListService,
+            IToDoService toDoService,
+            IUserService userService,
+            IToDoReportService toDoReportService,
             ITelegramBotClient botClient)
         {
 
-            var dataContextFactory = new DataContextFactory();
-            dataContextFactory.CreateDataContext();
-            _toDoRepository = new SqlToDoRepository(dataContextFactory);
-            _toDoListRepository = new SqlToDoListRepository(dataContextFactory);
-            _toDoListService = new ToDoListService(_toDoListRepository);
-            _toDoService = new ToDoService(_toDoRepository, _toDoListService);
-            _userRepository = new SqlUserRepository(dataContextFactory);
-            _userService = new UserService(_userRepository);
-            _toDoReportService = new ToDoReportService(_toDoRepository);
+            //var dataContextFactory = new DataContextFactory();
+            //dataContextFactory.CreateDataContext();
+            //_toDoRepository = new SqlToDoRepository(dataContextFactory);
+            _toDoRepository = toDoRepository;
+            //_toDoListRepository = new SqlToDoListRepository(dataContextFactory);
+            _toDoListRepository = toDoListRepository;
+            //_toDoListService = new ToDoListService(_toDoListRepository);
+            _toDoListService = toDoListService;
+            //_toDoService = new ToDoService(_toDoRepository, _toDoListService);
+            _toDoService = toDoService;
+            //_userRepository = new SqlUserRepository(dataContextFactory);
+            _userRepository = userRepository;
+            //_userService = new UserService(_userRepository);
+            _userService = userService;
+            //_toDoReportService = new ToDoReportService(_toDoRepository);
+            _toDoReportService = toDoReportService;
             _replyKeyboard = new ReplyKeyboardMarkup();
             _scenarios = scenarios;
             _contextRepository = contextRepository;

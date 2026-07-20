@@ -16,7 +16,7 @@ namespace TelegramBotLib.Core.Services
             var activeUserTasks = await _toDoRepository.GetActiveByUserId(userId, cancellationToken);
             var activeTasks = activeUserTasks.Count;
 
-            return (totalTasks, totalTasks - activeTasks, activeTasks, DateTime.Now);
+            return (totalTasks, totalTasks - activeTasks, activeTasks, DateTime.UtcNow);
         }
     }
 }

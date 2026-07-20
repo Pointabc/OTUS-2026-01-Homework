@@ -50,13 +50,18 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             if (toDoItem != null)
             {
                 toDoItem.State = ToDoItemState.Completed;
-                toDoItem.StateChangedAt = DateTime.Now;
+                toDoItem.StateChangedAt = DateTime.UtcNow;
             }
         }
 
         public async Task<IReadOnlyList<ToDoItem>> Find(Guid userId, Func<ToDoItem, bool> predicate, CancellationToken cancellationToken)
         {
             return _toDoItems.Where(x => x.User.UserId == userId && predicate(x)).ToList();
+        }
+
+        public async Task<IReadOnlyList<ToDoItem>> GetActiveWithDeadline(Guid userId, DateTime from, DateTime to, CancellationToken ct)
+        {
+            return await Find(userId, (x) => { return x.State == ToDoItemState.Active && x.Deadline >= from && x.Deadline < to; }, ct);
         }
     }
 }

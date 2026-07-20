@@ -4,7 +4,11 @@ using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using TelegramBotLib.Core.BackgroundTasks;
+using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Scenarios;
+using TelegramBotLib.Core.Services;
+using TelegramBotLib.Infrastructure;
+using TelegramBotLib.Infrastructure.DataAccess;
 using TelegramBotLib.TelegramBot;
 using static System.Console;
 
@@ -86,14 +90,40 @@ namespace TelegramBotLib
                 var ct = cancellationTokenSource.Token;
                 var botClient = new TelegramBotClient(token, httpClient, ct);
 
+                var dataContextFactory = new DataContextFactory();
+                dataContextFactory.CreateDataContext();
+                var toDoRepository = new SqlToDoRepository(dataContextFactory);
+                var userRepository = new SqlUserRepository(dataContextFactory);
+                var toDoListRepository = new SqlToDoListRepository(dataContextFactory);
+                var toDoListService = new ToDoListService(toDoListRepository);
+                var toDoService = new ToDoService(toDoRepository, toDoListService);
+                var userService = new UserService(userRepository);
+                var toDoReportService = new ToDoReportService(toDoRepository);
+
+                #region Добавить и запустить фоновые задачи.
+
                 using var backgroundTaskRunner = new BackgroundTaskRunner();
-                backgroundTaskRunner.AddTask(new ResetScenarioBackgroundTask(TimeSpan.FromHours(1), contextRepository, botClient));
+                backgroundTaskRunner.AddTask(new ResetScenarioBackgroundTask(TimeSpan.FromDays(1), contextRepository, botClient));
+                var notificationService = new NotificationService(dataContextFactory);
+                backgroundTaskRunner.AddTask(new NotificationBackgroundTask(TimeSpan.FromDays(1), notificationService, botClient));
+                backgroundTaskRunner.AddTask(new DeadlineBackgroundTask(TimeSpan.FromDays(1), notificationService, userRepository, toDoRepository));
+                backgroundTaskRunner.AddTask(new TodayBackgroundTask(TimeSpan.FromDays(1), notificationService, userRepository, toDoRepository));
                 // Запустить фоновые задачи.
                 backgroundTaskRunner.StartTasks(ct);
+
+                #endregion
 
                 var handler = new UpdateHandler(
                     scenarios,
                     contextRepository,
+                    dataContextFactory,
+                    toDoRepository,
+                    userRepository,
+                    toDoListRepository,
+                    toDoListService,
+                    toDoService,
+                    userService,
+                    toDoReportService,
                     botClient);
 
                 #endregion

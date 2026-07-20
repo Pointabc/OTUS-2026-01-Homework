@@ -16,7 +16,7 @@ namespace TelegramBotLib.Core.Services
         /// <summary>
         /// Получить список (категорию) для задач.
         /// </summary>
-        /// <param name="id">Гуид списка (категории) для задач.</param>
+        /// <param name="id">ИД списка (категории) для задач.</param>
         /// <param name="ct">Токен отмены.</param>
         /// <returns>Список (категория) для задач.</returns>
         Task<ToDoList?> Get(Guid id, CancellationToken ct);
@@ -24,14 +24,14 @@ namespace TelegramBotLib.Core.Services
         /// <summary>
         /// Удалить список (категорию) для задач.
         /// </summary>
-        /// <param name="id">Гуид списка (категории) для задач.</param>
+        /// <param name="id">ИД списка (категории) для задач.</param>
         /// <param name="ct">Токен отмены.</param>
         Task Delete(Guid id, CancellationToken ct);
 
         /// <summary>
         /// Получить списки (категории) для задачь пользователя.
         /// </summary>
-        /// <param name="userId">Гуид пользователя.</param>
+        /// <param name="userId">ИД пользователя.</param>
         /// <param name="ct">Токен отмены.</param>
         /// <returns>Список списков (категорий) для задач пользователя.</returns>
         Task<IReadOnlyList<ToDoList>> GetUserLists(Guid userId, CancellationToken ct);

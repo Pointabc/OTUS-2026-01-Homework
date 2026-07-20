@@ -26,5 +26,12 @@ namespace TelegramBotLib.Core.DataAccess
         /// <param name="user">Пользователь.</param>
         /// <param name="ct">Токен отмены.</param>
         Task Add(ToDoUser user, CancellationToken ct);
+
+        /// <summary>
+        /// Получить всех пользователей (зарегистрированных).
+        /// </summary>
+        /// <param name="ct">Токен отмены.</param>
+        /// <returns>Все пользователи.</returns>
+        Task<IReadOnlyList<ToDoUser>> GetUsers(CancellationToken ct);
     }
 }

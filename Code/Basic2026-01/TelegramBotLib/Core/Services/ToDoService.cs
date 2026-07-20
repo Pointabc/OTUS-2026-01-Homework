@@ -1,5 +1,4 @@
-﻿using Telegram.Bot.Types;
-using TelegramBotLib.Core.DataAccess;
+﻿using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Entities;
 using TelegramBotLib.Core.Exceptions;
 
@@ -43,7 +42,8 @@ namespace TelegramBotLib.Core.Services
             {
                 User = user,
                 Name = name,
-                StateChangedAt = DateTime.Now,
+                CreatedAt = DateTime.UtcNow,
+                StateChangedAt = DateTime.UtcNow,
                 Id = Guid.NewGuid(),
             };
             await _toDoRepository.Add(toDoItem, cancellationToken);

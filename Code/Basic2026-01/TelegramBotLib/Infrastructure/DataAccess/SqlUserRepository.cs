@@ -1,6 +1,5 @@
 ﻿using LinqToDB;
 using LinqToDB.Async;
-using Telegram.Bot.Types;
 using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Entities;
 
@@ -30,7 +29,6 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             {
                 var toDoUser = await dbContext.ToDoUsers
                     .Where(i => i.UserId == userId)
-                    
                     .FirstOrDefaultAsync();
 
                 return toDoUser != null ? ModelMapper.MapFromModel(toDoUser) : null;
@@ -41,14 +39,25 @@ namespace TelegramBotLib.Infrastructure.DataAccess
         {
             using (var dbContext = _factory.CreateDataContext())
             {
-                //var toDoUser1 = dbContext.ToDoUsers.Where(i => i.TelegramUserId == telegramUserId);
-
                 var toDoUser = await dbContext.ToDoUsers
                     .Where(i => i.TelegramUserId == telegramUserId)
                     .FirstOrDefaultAsync();
 
                 return toDoUser != null ? ModelMapper.MapFromModel(toDoUser) : null;
             }
+        }
+
+        public async Task<IReadOnlyList<ToDoUser>> GetUsers(CancellationToken ct)
+        {
+            var allUsers = new List<ToDoUser>();
+            using (var dbContext = _factory.CreateDataContext())
+            {
+                var toDoUser = await dbContext.ToDoUsers.FirstOrDefaultAsync();
+                if (toDoUser != null)
+                    allUsers.Add(ModelMapper.MapFromModel(toDoUser));
+            }
+
+            return allUsers;
         }
     }
 }

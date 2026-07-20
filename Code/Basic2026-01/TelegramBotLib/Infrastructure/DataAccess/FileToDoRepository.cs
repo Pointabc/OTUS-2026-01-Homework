@@ -112,6 +112,11 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             return toDoItems;
         }
 
+        public async Task<IReadOnlyList<ToDoItem>> GetActiveWithDeadline(Guid userId, DateTime from, DateTime to, CancellationToken ct)
+        {
+            return await Find(userId, (x) => { return x.State == ToDoItemState.Active && x.Deadline >= from && x.Deadline < to; }, ct);
+        }
+
         public async Task<IReadOnlyList<ToDoItem>> GetAllByUserId(Guid userId, CancellationToken ct)
         {
             var toDoItems = await Find(userId, x => true, ct);
@@ -134,7 +139,7 @@ namespace TelegramBotLib.Infrastructure.DataAccess
                 if (toDoItem != null && toDoItem.Id == item.Id)
                 {
                     toDoItem.State = ToDoItemState.Completed;
-                    toDoItem.StateChangedAt = DateTime.Now;
+                    toDoItem.StateChangedAt = DateTime.UtcNow;
 
                     // Перезаписать файл.
                     string jsonString = JsonSerializer.Serialize(toDoItem);

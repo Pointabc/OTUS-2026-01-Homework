@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Telegram.Bot.Types;
 using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Entities;
 
@@ -52,6 +53,22 @@ namespace TelegramBotLib.Infrastructure.DataAccess
             }
 
             return null;
+        }
+
+        public async Task<IReadOnlyList<ToDoUser>> GetUsers(CancellationToken ct)
+        {
+            var files = Directory.GetFiles(_userRepositoryFolder, "*.json");
+            var allUsers = new List<ToDoUser>();
+            foreach (var file in files)
+            {
+                string json = await File.ReadAllTextAsync(file, ct);
+                var toDoUser = JsonSerializer.Deserialize<ToDoUser>(json);
+
+                if (toDoUser != null)
+                    allUsers.Add(toDoUser);
+            }
+
+            return allUsers;
         }
     }
 }
