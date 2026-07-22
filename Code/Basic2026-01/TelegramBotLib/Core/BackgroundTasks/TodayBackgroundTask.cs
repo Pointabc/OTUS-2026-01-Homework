@@ -18,9 +18,12 @@ internal class TodayBackgroundTask : BackgroundTask
         IToDoRepository toDoRepository)
         : base(resetScenarioTimeout, nameof(TodayBackgroundTask))
     {
-        _notificationService = notificationService;
-        _userRepository = userRepository;
-        _toDoRepository = toDoRepository;
+        _resetScenarioTimeout = resetScenarioTimeout != TimeSpan.Zero
+            ? resetScenarioTimeout
+            : throw new ArgumentNullException();
+        _notificationService = notificationService ?? throw new ArgumentNullException();
+        _userRepository = userRepository ?? throw new ArgumentNullException();
+        _toDoRepository = toDoRepository ?? throw new ArgumentNullException();
     }
 
     protected override async Task Execute(CancellationToken ct)
@@ -31,18 +34,25 @@ internal class TodayBackgroundTask : BackgroundTask
         // Для каждого пользователя создать нотификацию с типом $"Today_{DateOnly.FromDateTime(DateTime.UtcNow)}".В тексте перечислить список задач
         foreach (var user in users)
         {
-            var activeToDoItems = await _toDoRepository.Find(user.UserId, (x) => { return x.Deadline.Date == DateTime.UtcNow.Date && x.State == ToDoItemState.Active; }, ct);
-            
-            // Для каждой задачи создать нотификацию с типом.
-            foreach (var toDoItem in activeToDoItems)
+            try
             {
-                
-                await _notificationService.ScheduleNotification(
-                    user.UserId,
-                    $"Today_{DateOnly.FromDateTime(DateTime.UtcNow)}",
-                    $"Задачу {toDoItem.Name} нужно выполнить сегодня.",
-                    DateTime.UtcNow, // TODO VS Запланированная дата отправки, как определить?.
-                    ct);
+                var activeToDoItems = await _toDoRepository.Find(user.UserId, (x) => { return x.Deadline.Date == DateTime.UtcNow.Date && x.State == ToDoItemState.Active; }, ct);
+
+                // Для каждой задачи создать нотификацию с типом.
+                foreach (var toDoItem in activeToDoItems)
+                {
+
+                    await _notificationService.ScheduleNotification(
+                        user.UserId,
+                        $"Today_{DateOnly.FromDateTime(DateTime.UtcNow)}",
+                        $"Задачу {toDoItem.Name} нужно выполнить сегодня.",
+                        DateTime.UtcNow, // TODO VS Запланированная дата отправки, как определить?.
+                        ct);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Возникла ошибка при создании уведомления.");
             }
         }
     }

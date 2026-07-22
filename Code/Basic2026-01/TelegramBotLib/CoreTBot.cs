@@ -4,7 +4,6 @@ using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using TelegramBotLib.Core.BackgroundTasks;
-using TelegramBotLib.Core.DataAccess;
 using TelegramBotLib.Core.Scenarios;
 using TelegramBotLib.Core.Services;
 using TelegramBotLib.Infrastructure;

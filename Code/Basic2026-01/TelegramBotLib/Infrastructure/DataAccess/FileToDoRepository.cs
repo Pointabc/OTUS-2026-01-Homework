@@ -114,7 +114,14 @@ namespace TelegramBotLib.Infrastructure.DataAccess
 
         public async Task<IReadOnlyList<ToDoItem>> GetActiveWithDeadline(Guid userId, DateTime from, DateTime to, CancellationToken ct)
         {
-            return await Find(userId, (x) => { return x.State == ToDoItemState.Active && x.Deadline >= from && x.Deadline < to; }, ct);
+            var allItems = await GetAllByUserId(userId, ct);
+            var filtered = allItems
+            .Where(x => x.State == ToDoItemState.Active
+                && x.Deadline >= from
+                && x.Deadline < to)
+            .ToList();
+
+            return filtered.AsReadOnly();
         }
 
         public async Task<IReadOnlyList<ToDoItem>> GetAllByUserId(Guid userId, CancellationToken ct)

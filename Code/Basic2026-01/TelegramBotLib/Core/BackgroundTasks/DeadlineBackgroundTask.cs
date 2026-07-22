@@ -18,10 +18,12 @@ internal class DeadlineBackgroundTask : BackgroundTask
         IToDoRepository toDoRepository)
         : base(resetScenarioTimeout, nameof(DeadlineBackgroundTask))
     {
-        _resetScenarioTimeout = resetScenarioTimeout;
-        _notificationService = notificationService;
-        _userRepository = userRepository;
-        _toDoRepository = toDoRepository;
+        _resetScenarioTimeout = resetScenarioTimeout != TimeSpan.Zero
+            ? resetScenarioTimeout
+            : throw new ArgumentNullException();
+        _notificationService = notificationService ?? throw new ArgumentNullException();
+        _userRepository = userRepository ?? throw new ArgumentNullException();
+        _toDoRepository = toDoRepository ?? throw new ArgumentNullException();
     }
 
     protected override async Task Execute(CancellationToken ct)
@@ -30,11 +32,12 @@ internal class DeadlineBackgroundTask : BackgroundTask
         var users = await _userRepository.GetUsers(ct);
 
         // Для каждого пользователя получить набор просроченных задач.
-        var expiredToDoItems = new List<ToDoItem>();
-
         foreach (var user in users)
         {
             var activeToDoItems = await _toDoRepository.GetActiveWithDeadline(user.UserId, DateTime.UtcNow.AddDays(-1).Date, DateTime.UtcNow.Date, ct);
+            if (!activeToDoItems.Any())
+                return;
+
             // Для каждой задачи создать нотификацию с типом.
             foreach (var toDoItem in activeToDoItems)
             {

@@ -13,7 +13,7 @@ internal class NotificationService : INotificationService
 
     public NotificationService(IDataContextFactory<ToDoDataContext> factory)
     {
-        _factory = factory;
+        _factory = factory ?? throw new ArgumentNullException();
     }
 
     public async Task<IReadOnlyList<Notification>> GetScheduledNotification(DateTime scheduledBefore, CancellationToken ct)
@@ -53,8 +53,7 @@ internal class NotificationService : INotificationService
         {
             // Загружаем существующую запись
             var notifiedModelFinded = await dbContext.Notifications
-                .LoadWith(u => u.User)
-                .FirstOrDefaultAsync(x => x.UserId == userId && x.Type == type && x.ScheduledAt == scheduledAt, ct);
+                .AnyAsync(x => x.UserId == userId && x.Type == type && x.ScheduledAt == scheduledAt, ct);
 
             // Создать уведомление в БД.
             if (notifiedModelFinded == null)
@@ -69,7 +68,7 @@ internal class NotificationService : INotificationService
                     IsNotified = false
                 };
 
-                await dbContext.InsertAsync(notificationModel);
+                await dbContext.InsertAsync(notificationModel, token: ct);
                 return true;
             }
 

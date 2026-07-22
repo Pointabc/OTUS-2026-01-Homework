@@ -22,7 +22,7 @@ namespace TelegramBotLib.TelegramBot
         IToDoListService _toDoListService;
         IUserRepository _userRepository;
         IToDoReportService _toDoReportService;
-        IToDoRepository _toDoRepository;                            //
+        IToDoRepository _toDoRepository;
         //IToDoRepositoryIndex _toDoRepositoryIndex;
         IToDoListRepository _toDoListRepository;
         string _userCommand = string.Empty;
@@ -47,27 +47,17 @@ namespace TelegramBotLib.TelegramBot
             IToDoReportService toDoReportService,
             ITelegramBotClient botClient)
         {
-
-            //var dataContextFactory = new DataContextFactory();
-            //dataContextFactory.CreateDataContext();
-            //_toDoRepository = new SqlToDoRepository(dataContextFactory);
-            _toDoRepository = toDoRepository;
-            //_toDoListRepository = new SqlToDoListRepository(dataContextFactory);
-            _toDoListRepository = toDoListRepository;
-            //_toDoListService = new ToDoListService(_toDoListRepository);
-            _toDoListService = toDoListService;
-            //_toDoService = new ToDoService(_toDoRepository, _toDoListService);
-            _toDoService = toDoService;
-            //_userRepository = new SqlUserRepository(dataContextFactory);
-            _userRepository = userRepository;
-            //_userService = new UserService(_userRepository);
-            _userService = userService;
-            //_toDoReportService = new ToDoReportService(_toDoRepository);
+            _toDoRepository = toDoRepository ?? throw new ArgumentNullException();
+            _toDoListRepository = toDoListRepository ?? throw new ArgumentNullException();
+            _toDoListService = toDoListService ?? throw new ArgumentNullException();
+            _toDoService = toDoService ?? throw new ArgumentNullException();
+            _userRepository = userRepository ?? throw new ArgumentNullException();
+            _userService = userService ?? throw new ArgumentNullException();
             _toDoReportService = toDoReportService;
             _replyKeyboard = new ReplyKeyboardMarkup();
-            _scenarios = scenarios;
-            _contextRepository = contextRepository;
-            _botClient = botClient;
+            _scenarios = scenarios ?? throw new ArgumentNullException();
+            _contextRepository = contextRepository ?? throw new ArgumentNullException();
+            _botClient = botClient ?? throw new ArgumentNullException();
         }
 
         /// <summary>

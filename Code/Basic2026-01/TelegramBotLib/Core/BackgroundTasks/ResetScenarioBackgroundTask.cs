@@ -16,9 +16,11 @@ internal class ResetScenarioBackgroundTask : BackgroundTask
         ITelegramBotClient bot)
         : base(resetScenarioTimeout, nameof(ResetScenarioBackgroundTask))
     {
-        _resetScenarioTimeout = resetScenarioTimeout;
-        _scenarioRepository = scenarioRepository;
-        _bot = bot;
+        _resetScenarioTimeout = resetScenarioTimeout != TimeSpan.Zero
+            ? resetScenarioTimeout
+            : throw new ArgumentNullException();
+        _scenarioRepository = scenarioRepository ?? throw new ArgumentNullException();
+        _bot = bot ?? throw new ArgumentNullException();
     }
 
     protected override async Task Execute(CancellationToken ct)
