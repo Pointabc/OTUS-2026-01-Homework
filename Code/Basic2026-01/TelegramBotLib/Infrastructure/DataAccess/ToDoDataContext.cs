@@ -1,6 +1,7 @@
 ﻿using LinqToDB;
 using LinqToDB.Data;
 using TelegramBotLib.Core.DataAccess.Models;
+using TelegramBotLib.Infrastructure.DataAccess.Models;
 
 namespace TelegramBotLib.Infrastructure.DataAccess
 {
@@ -11,5 +12,6 @@ namespace TelegramBotLib.Infrastructure.DataAccess
         public ITable<ToDoItemModel> ToDoItems => this.GetTable<ToDoItemModel>();
         public ITable<ToDoListModel> ToDoLists => this.GetTable<ToDoListModel>();
         public ITable<ToDoUserModel> ToDoUsers => this.GetTable<ToDoUserModel>();
+        public ITable<NotificationModel> Notifications => this.GetTable<NotificationModel>();
     }
 }

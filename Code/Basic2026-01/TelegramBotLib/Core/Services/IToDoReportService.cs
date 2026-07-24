@@ -1,7 +1,6 @@
-﻿namespace TelegramBotLib.Core.Services
+﻿namespace TelegramBotLib.Core.Services;
+
+internal interface IToDoReportService
 {
-    internal interface IToDoReportService
-    {
-        Task<(int total, int completed, int active, DateTime generatedAt)> GetUserStats(Guid userId, CancellationToken cancellationToken);
-    }
+    Task<(int total, int completed, int active, DateTime generatedAt)> GetUserStats(Guid userId, CancellationToken cancellationToken);
 }

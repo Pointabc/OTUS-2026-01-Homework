@@ -21,5 +21,10 @@ namespace TelegramBotLib.Infrastructure.DataAccess
         {
             return _toDoUsers.Where(x => x.TelegramUserId == telegramUserId).FirstOrDefault();
         }
+
+        public async Task<IReadOnlyList<ToDoUser>> GetUsers(CancellationToken ct)
+        {
+            return _toDoUsers;
+        }
     }
 }

@@ -102,8 +102,13 @@ namespace TelegramBotLib.Infrastructure.DataAccess
                     .Where(i => i.UserId == userId && i.State == ToDoItemState.Active)
                     .ToListAsync();
 
-                return toDoItems.Select(x => ModelMapper.MapFromModel(x)).ToList().AsReadOnly();
+                return toDoItems.Select(ModelMapper.MapFromModel).ToList();
             }
+        }
+
+        public async Task<IReadOnlyList<ToDoItem>> GetActiveWithDeadline(Guid userId, DateTime from, DateTime to, CancellationToken ct)
+        {
+            return await Find(userId, (x) => { return x.State == ToDoItemState.Active && x.Deadline <= from && x.Deadline < to; }, ct);
         }
 
         public async Task<IReadOnlyList<ToDoItem>> GetAllByUserId(Guid userId, CancellationToken ct)
@@ -134,7 +139,7 @@ namespace TelegramBotLib.Infrastructure.DataAccess
                     throw new InvalidOperationException($"ToDoItem с Id {item.Id} не найдена.");
 
                 toDoItemModelFinded.State = ToDoItemState.Completed;
-                toDoItemModelFinded.StateChangedAt = DateTime.Now;
+                toDoItemModelFinded.StateChangedAt = DateTime.UtcNow;
 
                 await dbContext.UpdateAsync(toDoItemModelFinded, token: ct);
             }

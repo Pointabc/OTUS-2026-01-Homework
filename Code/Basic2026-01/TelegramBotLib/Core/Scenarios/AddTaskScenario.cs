@@ -60,9 +60,6 @@ namespace TelegramBotLib.Core.Scenarios
                 switch (toDoItemCallbackDto.Action)
                 {
                     case "SelectList":
-                        //if (toDoItemCallbackDto.ToDoItemId == null)
-                            //return scenarioResult;
-
                         var chat = UpdateHandler.GetChatFromUpdate(update);
                         // Тут получить список (категорию) для задач по Id и добавить в создаваемую задачу.
                         var list = toDoItemCallbackDto.ToDoItemId != null
@@ -71,6 +68,7 @@ namespace TelegramBotLib.Core.Scenarios
 
                         _toDoItem.List = list;
                         _toDoItem.StateChangedAt = DateTime.UtcNow;
+                        _toDoItem.CreatedAt = DateTime.UtcNow;
 
                         var task = await _toDoService.Add(_toDoItem, ct);
                         if (task == null)

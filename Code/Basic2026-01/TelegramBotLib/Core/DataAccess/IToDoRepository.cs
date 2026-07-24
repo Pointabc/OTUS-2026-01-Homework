@@ -67,12 +67,22 @@ namespace TelegramBotLib.Core.DataAccess
         Task<int> CountActive(Guid userId, CancellationToken ct);
 
         /// <summary>
-        /// Найти задачи пользователя.
+        /// Получить задачи пользователя.
         /// </summary>
         /// <param name="userId">ИД пользователя.</param>
         /// <param name="predicate">Условие поиска задачи пользователя.</param>
         /// <param name="cancellationToken">Токен отмены.</param>
         /// <returns>Задачи пользователя.</returns>
         Task<IReadOnlyList<ToDoItem>> Find(Guid userId, Func<ToDoItem, bool> predicate, CancellationToken ct);
+
+        /// <summary>
+        /// Получить активные задачи пользователя, у которых Deadline >= from && Deadline < to.
+        /// </summary>
+        /// <param name="userId">ИД пользователя.</param>
+        /// <param name="from">Дата от.</param>
+        /// <param name="to">Дата до.</param>
+        /// <param name="ct">Токен отмены.</param>
+        /// <returns>Задачи пользователя.</returns>
+        Task<IReadOnlyList<ToDoItem>> GetActiveWithDeadline(Guid userId, DateTime from, DateTime to, CancellationToken ct);
     }
 }

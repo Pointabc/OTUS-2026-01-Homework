@@ -6,9 +6,9 @@ namespace TelegramBotLib.Core.BackgroundTasks;
 
 internal class ResetScenarioBackgroundTask : BackgroundTask
 {
-    ITelegramBotClient _bot;
-    IScenarioContextRepository _scenarioRepository;
-    TimeSpan _resetScenarioTimeout;
+    ITelegramBotClient _bot { get; set; }
+    IScenarioContextRepository _scenarioRepository { get; set; }
+    TimeSpan _resetScenarioTimeout { get; set; }
 
     public ResetScenarioBackgroundTask(
         TimeSpan resetScenarioTimeout,
@@ -16,8 +16,11 @@ internal class ResetScenarioBackgroundTask : BackgroundTask
         ITelegramBotClient bot)
         : base(resetScenarioTimeout, nameof(ResetScenarioBackgroundTask))
     {
-        _scenarioRepository = scenarioRepository;
-        _bot = bot;
+        _resetScenarioTimeout = resetScenarioTimeout != TimeSpan.Zero
+            ? resetScenarioTimeout
+            : throw new ArgumentNullException();
+        _scenarioRepository = scenarioRepository ?? throw new ArgumentNullException();
+        _bot = bot ?? throw new ArgumentNullException();
     }
 
     protected override async Task Execute(CancellationToken ct)
@@ -27,7 +30,7 @@ internal class ResetScenarioBackgroundTask : BackgroundTask
         foreach (var context in contexts)
         {
             var timeDelta = DateTime.UtcNow - context.CreatedAt;
-            if (timeDelta > _resetScenarioTimeout)
+            if (timeDelta > this. _resetScenarioTimeout)
             {
                 await _scenarioRepository.ResetContext(context.UserId, CancellationToken.None);
                 // Получить chatId из context.Data.
